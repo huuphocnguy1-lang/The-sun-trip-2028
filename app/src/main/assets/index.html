@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Sun Trip 2028 — app demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ground:#F3F2ED; --card:#FFFFFF; --ink:#16181D; --muted:#5B6070; --line:#E2E0D8;
+    --blue:#1F5FD1; --blue-soft:#E7EEFB; --sun:#F2B544; --sun-ink:#9A5B00; --warn:#C2410C; --in:#1E8A4C; --out:#C93636;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:#DCDAD2;font-family:Inter,system-ui,sans-serif;color:var(--ink);display:flex;flex-wrap:wrap;gap:32px;align-items:center;justify-content:center;padding:24px;min-height:100%}
+  .num{font-variant-numeric:tabular-nums}
+  .g{font-family:'Space Grotesk',sans-serif;font-weight:700}
+
+  /* demo controls (outside the phone) */
+  .panel{width:300px;display:flex;flex-direction:column;gap:14px}
+  .panel h2{margin:0;font-family:'Space Grotesk',sans-serif;font-size:26px}
+  .panel p{margin:0;font-size:14px;line-height:1.5;color:#3E4350}
+  .seg{display:flex;background:#FFFFFF;border:1px solid #CFCCC2;border-radius:14px;padding:4px;gap:4px}
+  .seg button{flex:1;height:40px;border:0;background:transparent;border-radius:10px;font:600 14px Inter,sans-serif;color:var(--ink);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .btn{height:44px;border-radius:12px;border:1px solid #CFCCC2;background:#fff;font:600 14px Inter,sans-serif;cursor:pointer;color:var(--ink)}
+  .lbl{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+  /* phone */
+  .phone{width:390px;height:844px;border-radius:44px;background:#0E0F12;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.25);flex:none}
+  .screen{width:100%;height:100%;border-radius:36px;overflow:hidden;background:var(--ground);display:flex;flex-direction:column;position:relative}
+  header.top{display:flex;align-items:center;justify-content:space-between;padding:22px 18px 10px}
+  header.top .sub{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  header.top h1{margin:2px 0 0;font-family:'Space Grotesk',sans-serif;font-size:28px}
+  .bt{height:40px;padding:0 12px;border-radius:20px;border:1px solid #CFE0FA;background:#EAF1FD;color:#174AA6;font:600 13px Inter,sans-serif;display:flex;align-items:center;gap:6px}
+  .bt.off{background:#FBEAE3;border-color:#F3C9B8;color:var(--warn)}
+  .view{flex:1;display:none;flex-direction:column;gap:10px;padding:0 14px 10px;overflow:auto}
+  .view.on{display:flex}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:13px 15px;display:flex;flex-direction:column;gap:8px}
+  .dark{background:var(--ink);color:#fff;border:0;border-radius:22px}
+  .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:#2A2E37;border-radius:12px;padding:6px 10px;font-size:13px}
+  .sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .bar{position:relative;height:14px;background:#ECEAE3;border-radius:7px;overflow:hidden}
+  .bar>i{position:absolute;left:0;top:0;bottom:0;background:var(--blue);border-radius:7px;transition:width .4s}
+  .bar>b{position:absolute;left:10%;top:0;bottom:0;width:2px;background:var(--warn)}
+  .small{font-size:13px;color:var(--muted)}
+  .strip{display:flex;height:8px;border-radius:4px;overflow:hidden}
+  nav.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:#fff;border-top:1px solid var(--line);padding:6px 6px 12px}
+  nav.tabs button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;font:600 12px Inter,sans-serif;color:var(--muted);cursor:pointer}
+  nav.tabs button[aria-selected="true"]{color:var(--blue)}
+  .list>div{display:flex;align-items:center;gap:12px;min-height:42px;border-bottom:1px solid #F0EEE8;font-size:14px}
+  .list>div:last-child{border-bottom:0}
+  .dot{width:12px;height:12px;border-radius:6px;flex:none}
+  .tiltbtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .tiltbtns button{height:44px;border-radius:12px;border:1px solid #3A3F4A;background:transparent;color:#fff;font:600 16px Inter,sans-serif;cursor:pointer}
+  .tiltbtns button[aria-pressed="true"]{background:var(--sun);color:var(--ink);border-color:var(--sun)}
+  .camp{position:absolute;left:14px;right:14px;top:84px;background:#16181D;color:#fff;border-radius:14px;padding:10px 14px;font-size:13px;display:none;z-index:2}
+  .mini{display:flex;align-items:center;gap:10px;background:#fff;border-top:1px solid var(--line);padding:8px 14px}
+  .mini .art{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#1F5FD1,#16181D);flex:none;display:flex;align-items:center;justify-content:center}
+  .ib{width:44px;height:44px;border-radius:22px;border:0;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink)}
+  .ib.fill{background:var(--ink);color:#fff}
+  .ptt{width:190px;height:190px;border-radius:50%;border:0;background:var(--ink);color:#fff;font:700 18px Inter,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin:6px auto;user-select:none;-webkit-user-select:none;touch-action:none}
+  .ptt.tx{background:var(--warn);box-shadow:0 0 0 14px rgba(194,65,12,.18)}
+  .wave{display:flex;gap:3px;align-items:center;height:20px}
+  .wave i{width:3px;background:currentColor;border-radius:2px;height:6px}
+  .ptt.tx .wave i{animation:w .6s infinite ease-in-out alternate}
+  .wave i:nth-child(2){animation-delay:.1s}.wave i:nth-child(3){animation-delay:.2s}.wave i:nth-child(4){animation-delay:.3s}.wave i:nth-child(5){animation-delay:.4s}
+  @keyframes w{to{height:18px}}
+  .rx{background:#EAF1FD;border:1px solid #CFE0FA;color:#174AA6}
+  /* ---- dark mode: true black for OLED ---- */
+  .screen.dk{--ground:#000;--card:#111215;--ink:#EDEDEA;--muted:#A3A8B4;--line:#24262C;--blue:#6EA0FF;--blue-soft:#14233F;--sun-ink:#F2B544;--warn:#FF7A45;--in:#4CC27E;--out:#FF6B6B;color:var(--ink)}
+  .screen.dk .dark{background:#1A1C21}
+  .screen.dk nav.tabs,.screen.dk .mini{background:#0A0B0D;border-color:#1E2025}
+  .screen.dk .bar{background:#24262C}
+  .screen.dk .list>div{border-color:#1E2025}
+  .screen.dk .btn{background:#111215;color:var(--ink);border-color:#2A2D33}
+  .screen.dk .ib{color:var(--ink)} .screen.dk .ib.fill{background:#EDEDEA;color:#000}
+  .screen.dk .ptt{background:#1F2228;color:#EDEDEA} .screen.dk .ptt.tx{background:#C2410C;color:#fff}
+  .screen.dk .rx{background:#14233F;border-color:#22385F;color:#9FC0FF}
+  .screen.dk .bt{background:#14233F;border-color:#22385F;color:#9FC0FF}
+  .screen.dk .bt.off{background:#2B140B;border-color:#5A2A16;color:#FF9A70}
+  .screen.dk .mapcard{background:#0D1117!important;border-color:#1E2025!important}
+  .screen.dk .mapcard text{fill:#C9CDD6}
+  .screen.dk [style*="color:#3E4350"]{color:var(--muted)!important}
+  .screen.dk [style*="color:var(--ink)"]{color:var(--ink)}
+  .screen.dk .camp{background:#1A1C21}
+  .mode{width:40px;height:40px;border-radius:20px;border:1px solid var(--line);background:var(--card);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .navb{background:var(--blue);color:#fff;border-radius:20px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+  .screen.dk .navb{background:#14233F;color:#EDEDEA}
+  .navb .arr{width:54px;height:54px;border-radius:14px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex:none}
+  .navb .vb{width:44px;height:44px;border-radius:22px;border:0;background:rgba(255,255,255,.16);color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+  .pw{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--ground);color:var(--ink);font:600 22px Inter,sans-serif;cursor:pointer;flex:none}
+  .pw:disabled{opacity:.35;cursor:default}
+  @media (max-width: 560px){
+    body{padding:0;display:block;background:#000}
+    .panel{display:none}
+    .phone{width:100vw;height:100vh;border-radius:0;padding:0;box-shadow:none}
+    .screen{border-radius:0}
+  }
+</style>
+</head>
+<body>
+
+<section class="panel" aria-label="Demo controls">
+  <span class="lbl">Demo · simulated data</span>
+  <div style="display:flex;align-items:center;gap:14px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="88" height="88" role="img" aria-label="The Sun Trip 2028 app icon">
+  <rect width="512" height="512" rx="112" fill="#10213F"/>
+  <!-- sun -->
+  <g stroke="#F6B73C" stroke-width="16" stroke-linecap="round">
+    <line x1="372" y1="58" x2="372" y2="86"/>
+    <line x1="372" y1="198" x2="372" y2="226"/>
+    <line x1="288" y1="142" x2="316" y2="142"/>
+    <line x1="428" y1="142" x2="456" y2="142"/>
+    <line x1="313" y1="83" x2="332" y2="102"/>
+    <line x1="412" y1="182" x2="431" y2="201"/>
+    <line x1="313" y1="201" x2="332" y2="182"/>
+    <line x1="412" y1="102" x2="431" y2="83"/>
+  </g>
+  <circle cx="372" cy="142" r="44" fill="#F6B73C"/>
+  <!-- solar panel roof -->
+  <g transform="rotate(-8 230 236)">
+    <rect x="96" y="214" width="268" height="44" rx="6" fill="#2F6FDB" stroke="#CFE0FA" stroke-width="6"/>
+    <path d="M163 214v44M230 214v44M297 214v44M96 236h268" stroke="#CFE0FA" stroke-width="4"/>
+  </g>
+  <!-- panel posts -->
+  <path d="M150 268 L176 352 M318 246 L330 330" stroke="#CFE0FA" stroke-width="10" stroke-linecap="round"/>
+  <!-- recumbent e-trike -->
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="148" cy="392" r="50" stroke-width="14"/>
+    <circle cx="362" cy="380" r="62" stroke-width="14"/>
+    <circle cx="362" cy="380" r="16" stroke-width="10"/>
+    <path d="M148 392 L250 372 L362 380" stroke-width="12"/>
+    <path d="M196 372 L230 312 L300 300 L326 330" stroke-width="12"/>
+    <path d="M118 352 L98 330" stroke-width="12"/>
+  </g>
+  <!-- lightning bolt on hub motor -->
+  <path d="M368 352 L352 384 L366 384 L356 410 L378 374 L364 374 Z" fill="#F6B73C"/>
+  <!-- road -->
+  <path d="M60 460 H452" stroke="#2F6FDB" stroke-width="10" stroke-linecap="round" stroke-dasharray="40 26"/>
+</svg>
+<h2>The Sun Trip 2028</h2></div>
+  <p>This shows how the app would look and behave during the ride. The values are simulated: speed comes from the slope, wind and power (rider 120 W + motor 200 W), and the battery charges only from the solar panels (600 W roof panel + extra panel when switched on).</p>
+  <div>
+    <div class="lbl" style="margin-bottom:6px">Time speed</div>
+    <div class="seg" id="speedSeg">
+      <button type="button" data-k="1">Real time</button>
+      <button type="button" data-k="60" aria-pressed="true">×60</button>
+      <button type="button" data-k="600">×600</button>
+    </div>
+  </div>
+  <button type="button" class="btn" id="pauseBtn">Pause</button>
+  <button type="button" class="btn" id="modeBtn2"><span id="modeTxt">Dark mode: on</span></button>
+  <button type="button" class="btn" id="btBtn">Simulate Bluetooth drop</button>
+  <p class="small">Motor: use − / + on the Ride screen (0–350 W, steps of 25 W). Speed and range change at once.</p>
+  <p class="small">Navigation: turn arrows and spoken directions follow the route (example turns in this demo). Tap the speaker to mute.</p>
+  <p class="small">Music: pick songs from your device with “Add songs”. Talk: hold the big button; replies are simulated in this demo.</p>
+  <p class="small">On the real phone: position and speed come from GPS, battery and solar from the bike over Bluetooth.</p>
+</section>
+
+<div class="phone">
+<div class="screen dk" id="screen">
+  <header class="top">
+    <div>
+      <div class="sub num" id="hdrSub">Day 57 · Hami → Lanzhou</div>
+      <h1 id="hdrTitle">Ride</h1>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+    <button type="button" class="mode" id="modeBtn" aria-label="Switch to light mode"><svg id="modeIco" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"></svg></button>
+    <span class="bt" id="btChip" role="status">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg><span id="btTxt">Connected</span>
+    </span>
+    </div>
+  </header>
+  <div class="camp" id="camp">Stopped (lunch or night) · battery keeps charging while the sun is up.</div>
+
+  <!-- RIDE -->
+  <div class="view on" id="v-ride">
+    <section class="navb" aria-live="polite" aria-label="Navigation">
+      <div class="arr"><svg id="navIco" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg></div>
+      <div style="flex:1;min-width:0">
+        <div class="g num" id="navDist" style="font-size:26px;line-height:1.1">— m</div>
+        <div id="navTxt" style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        <div id="navThen" style="font-size:12px;opacity:.85">—</div>
+      </div>
+      <button type="button" class="vb" id="voiceBtn" aria-label="Voice guidance on" aria-pressed="true"><svg id="voiceIco" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg></button>
+    </section>
+    <section class="card" id="navMore" style="padding:8px 15px;gap:0">
+      <div class="row small num" style="padding:4px 0 6px"><span id="navRoad">—</span><button type="button" id="navToggle" aria-expanded="true" style="border:0;background:transparent;color:var(--blue);font:600 13px Inter,sans-serif;cursor:pointer;min-height:32px">Less ▴</button></div>
+      <div id="navList" class="list" style="display:flex;flex-direction:column"></div>
+    </section>
+    <section class="card dark" style="padding:16px 18px;gap:10px">
+      <div class="row"><span style="font-size:13px;color:#B9BDC8">Speed</span><span class="num" style="font-size:13px;color:#B9BDC8"><span id="clock">08:00</span> · Lanzhou in <b style="color:#fff" id="toNext">—</b></span></div>
+      <div style="display:flex;align-items:baseline;gap:8px"><span class="g num" id="spd" style="font-size:64px;line-height:1">0.0</span><span style="font-size:18px;color:#B9BDC8">km/h</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="chip"><span class="sw" id="surfSw"></span><span id="surfTxt">Asphalt</span></span></div>
+    </section>
+    <div class="grid2">
+      <section class="card">
+        <span class="lbl">Slope</span>
+        <span class="g num" id="slope" style="font-size:30px">0 %</span>
+        <span class="small num" id="alt">— m</span>
+      </section>
+      <section class="card">
+        <span class="lbl">Weather</span>
+        <div style="display:flex;align-items:center;gap:8px"><svg id="wxIco" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg><span class="g num" id="temp" style="font-size:28px">14 °C</span></div>
+        <span id="wxTxt" style="font-size:14px;font-weight:600">Sunny</span>
+        <span class="small num" id="wind">Headwind 12 km/h</span>
+        <span class="small num" id="sunTimes" style="display:flex;gap:10px"></span>
+      </section>
+    </div>
+    <section class="card">
+      <div class="row"><span class="lbl">Battery · solar only</span><span class="small num" id="range">≈ — km motor range</span></div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <span class="g num" id="batt" style="font-size:34px;line-height:1">72 %</span>
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+          <div class="bar"><i id="battBar" style="width:72%"></i><b></b></div>
+          <span class="small" id="battNote">Charging from panel · min 10 %</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:10px">
+        <div style="flex:1;display:flex;flex-direction:column">
+          <span class="lbl">Motor power</span>
+          <span class="small num">Rider 120 W · Solar <b style="color:var(--in)" id="solarW">+0 W</b></span>
+        </div>
+        <button type="button" class="pw" id="mDown" aria-label="Less motor power">−</button>
+        <span class="g num" id="motorW" style="font-size:22px;min-width:74px;text-align:center">200 W</span>
+        <button type="button" class="pw" id="mUp" aria-label="More motor power">+</button>
+      </div>
+    </section>
+    <section class="card">
+      <div class="row"><span class="lbl">Next 20 km</span><span class="small num" id="climb">—</span></div>
+      <svg id="prof" width="100%" height="64" viewBox="0 0 326 64" preserveAspectRatio="none" role="img" aria-label="Elevation profile of the next 20 km"></svg>
+      <div class="strip" id="profStrip"></div>
+    </section>
+  </div>
+
+  <!-- ROUTE -->
+  <div class="view" id="v-route">
+    <section class="card mapcard" style="background:#E9EEF2;border-color:#DCE2E7;padding:0;overflow:hidden">
+      <svg width="100%" height="210" viewBox="0 0 358 210" role="img" aria-label="Route map Lyon to Guangzhou">
+        <path id="rBase" d="M18 60 L62 54 L106 56 L146 46 L180 80 L214 100 L252 82 L270 80 L292 88 L306 110 L326 150 L340 192" fill="none" stroke="#9DB6E6" stroke-width="4" stroke-dasharray="2 7" stroke-linecap="round" stroke-linejoin="round"/>
+        <path id="rDone" d="M18 60 L62 54 L106 56 L146 46 L180 80 L214 100 L252 82 L270 80 L292 88 L306 110 L326 150 L340 192" fill="none" stroke="#1F5FD1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle id="rMe" r="8" fill="#16181D" stroke="#fff" stroke-width="3"/>
+        <text x="14" y="46" font-size="11" font-weight="600" fill="#16181D">Lyon</text>
+        <text x="130" y="34" font-size="11" fill="#3E4350">Kharkiv</text>
+        <text x="200" y="118" font-size="11" fill="#3E4350">Bishkek</text>
+        <text x="282" y="200" font-size="11" font-weight="600" fill="#16181D">Guangzhou</text>
+      </svg>
+    </section>
+    <section class="card">
+      <div class="row"><span class="g num" id="doneKm" style="font-size:22px">—</span><span class="small num" id="leftKm">—</span></div>
+      <div class="bar" style="height:10px"><i id="tripBar"></i></div>
+      <span class="small num" id="tripNote">—</span>
+    </section>
+    <section class="card">
+      <span class="lbl">Surfaces ahead</span>
+      <div class="strip" id="routeStrip"></div>
+      <div id="legend" style="display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:#3E4350"></div>
+    </section>
+    <section class="card list" id="stops" style="padding:4px 15px"></section>
+  </div>
+
+  <!-- ENERGY -->
+  <div class="view" id="v-energy">
+    <section class="card">
+      <div class="row"><span class="lbl">Today</span><span class="small num">In <b style="color:var(--in)" id="eIn">0</b> · Out <b style="color:var(--out)" id="eOut">0</b></span></div>
+      <div id="eChart" style="display:flex;align-items:flex-end;gap:4px;height:96px"></div>
+      <div class="row small" style="font-size:11px"><span>06:00</span><span>13:00</span><span>20:00</span></div>
+      <div style="display:flex;gap:14px;font-size:12px;color:#3E4350"><span><span class="sw" style="background:var(--in)"></span> In (solar)</span><span><span class="sw" style="background:var(--out)"></span> Out (motor)</span></div>
+    </section>
+    <section class="card dark" style="padding:15px 17px;gap:12px">
+      <div class="row"><span class="lbl" style="color:#B9BDC8">Roof panel tilt</span><span style="font-size:12px;color:#B9BDC8">−30° … +30°</span></div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <svg width="72" height="52" viewBox="0 0 72 52" fill="none" aria-hidden="true"><path d="M36 30v18M20 48h32" stroke="#5B6070" stroke-width="2" stroke-linecap="round"/><line id="panelLine" x1="12" y1="30" x2="60" y2="30" stroke="#F2B544" stroke-width="5" stroke-linecap="round"/><circle id="sunDot" cx="36" cy="7" r="5" stroke="#F2B544" stroke-width="2"/></svg>
+        <div><div class="g num" id="tilt" style="font-size:36px;line-height:1">30°</div><div class="num" style="font-size:13px;color:#B9BDC8" id="sunTxt">Sun at —</div></div>
+      </div>
+      <div class="tiltbtns">
+        <button type="button" id="tDown" aria-label="Tilt down">−</button>
+        <button type="button" id="tAuto" aria-pressed="true" style="font-size:14px">Auto sun</button>
+        <button type="button" id="tUp" aria-label="Tilt up">+</button>
+      </div>
+    </section>
+    <section class="card">
+      <div class="row"><span class="lbl">Power from each panel</span><span class="small num">Total <b style="color:var(--in)" id="pTot">0 W</b></span></div>
+      <div id="pGrid" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px"></div>
+    </section>
+    <section class="card list" style="padding:4px 15px">
+      <div><span style="flex:1;display:flex;flex-direction:column"><b>Panel 5 (extra)</b><span class="small num" id="exTxt">Off</span></span>
+        <button type="button" role="switch" aria-checked="false" id="exBtn" aria-label="Extra panel" style="width:56px;height:32px;border-radius:16px;border:0;background:var(--line);position:relative;cursor:pointer"><span id="exKnob" style="position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:13px;background:#fff;transition:left .2s"></span></button></div>
+      <div><span style="flex:1;font-weight:600">Battery</span><span class="g num" id="eBatt">—</span></div>
+      <div><span style="flex:1;font-weight:600">Motor</span><span class="num" id="eMotor">—</span></div>
+      <div style="color:#3E4350;font-size:13px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>Below 10 % the motor stops, rider only</div>
+    </section>
+  </div>
+
+  <!-- TRIP -->
+  <div class="view" id="v-trip">
+    <div class="grid2">
+      <section class="card dark"><span style="font-size:12px;color:#B9BDC8">Arrival estimate</span><span class="g num" style="font-size:28px" id="tDays">—</span></section>
+      <section class="card"><span class="small">Distance</span><span class="g num" style="font-size:28px">14 300 km</span></section>
+      <section class="card"><span class="small">Today so far</span><span class="g num" style="font-size:24px" id="tToday">0 km</span></section>
+      <section class="card"><span class="small">Average speed today</span><span class="g num" style="font-size:24px" id="tAvg">—</span></section>
+    </div>
+    <div class="grid2">
+      <label class="btn" style="display:flex;align-items:center;justify-content:center">Load GPX<input type="file" id="gpxIn" accept=".gpx,application/gpx+xml,application/xml,text/xml" style="display:none"></label>
+      <button type="button" class="btn" id="runSim" style="background:var(--blue);color:#fff;border:0">Run simulation</button>
+    </div>
+    <span class="small" id="gpxInfo">Route: example Lyon → Guangzhou (14 300 km). Load your komoot GPX to use the real route.</span>
+    <section class="card" id="simRes" style="display:none">
+      <div class="row"><span class="lbl">Simulation result</span><span class="small" id="simWhat"></span></div>
+      <div class="grid2" id="simTiles"></div>
+      <span class="lbl" style="margin-top:4px">Day by day</span>
+      <div class="list" id="simDays" style="display:flex;flex-direction:column;max-height:240px;overflow:auto"></div>
+    </section>
+  </div>
+
+  <!-- TALK -->
+  <div class="view" id="v-talk">
+    <section class="card">
+      <div class="row"><span class="lbl">Channel · Team Guangzhou</span><span class="small" id="talkLink">Mobile data</span></div>
+      <div class="list" id="riders">
+        <div><span class="dot" style="background:#2E8B57"></span><span style="flex:1;font-weight:600">Rider 2</span><span class="small">online</span></div>
+        <div><span class="dot" style="background:#2E8B57"></span><span style="flex:1;font-weight:600">Rider 3</span><span class="small">online</span></div>
+      </div>
+    </section>
+    <section class="card" style="align-items:center;padding:16px">
+      <button type="button" class="ptt" id="ptt" aria-label="Hold to talk">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        <span id="pttTxt">Hold to talk</span>
+        <span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      </button>
+      <span class="small">Music lowers automatically while someone talks</span>
+    </section>
+    <section class="card" id="msgs" style="gap:6px">
+      <span class="lbl">Recent</span>
+      <div class="small" id="msgList"><div style="padding:4px 0">Rider 2 · 07:52 · “Leaving camp in 5 minutes” · 0:04</div></div>
+    </section>
+  </div>
+
+  <div class="mini" aria-label="Music player">
+    <div class="art" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></div>
+    <div style="flex:1;min-width:0">
+      <div id="trk" style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">No music loaded</div>
+      <label style="font-size:12px;color:var(--blue);cursor:pointer;font-weight:600">Add songs from phone<input type="file" id="songs" accept="audio/*" multiple style="display:none"></label>
+    </div>
+    <button type="button" class="ib fill" id="play" aria-label="Play"><svg id="playIco" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg></button>
+    <button type="button" class="ib" id="next" aria-label="Next song"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5l10 7-10 7zM19 5v14"/></svg></button>
+    <audio id="aud"></audio>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="Main">
+    <button type="button" role="tab" aria-selected="true" data-v="ride"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4M12 3v2"/></svg>Ride</button>
+    <button type="button" role="tab" aria-selected="false" data-v="route"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/></svg>Route</button>
+    <button type="button" role="tab" aria-selected="false" data-v="energy"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Energy</button>
+    <button type="button" role="tab" aria-selected="false" data-v="talk"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Talk</button>
+    <button type="button" role="tab" aria-selected="false" data-v="trip"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 2v4M16 2v4M4 10h16"/></svg>Trip</button>
+  </nav>
+</div>
+</div>
+
+<script>
+(function(){
+  // ---------- route model (example data) ----------
+  const TOTAL = 14300;
+  const STOPS = [
+    ['Lyon',0],['Geneva',152],['Munich',700],['Vienna',1130],['Budapest',1380],['Kyiv',2400],['Kharkiv',2880],
+    ['Voronezh',3150],['Volgograd',3750],['Astrakhan',4180],['Atyrau',4560],['Aktobe',5150],['Baikonur',5800],
+    ['Tashkent',6550],['Bishkek',7150],['Urumqi',8720],['Hami',9300],['Lanzhou',10960],['Xi’an',11590],
+    ['Wuhan',12650],['Guangzhou',14300]
+  ];
+  const SURF = [
+    {n:'Asphalt',c:'#4A4F5C'},{n:'Paved',c:'#7C8597'},{n:'Gravel',c:'#C49A5A'},{n:'Unpaved',c:'#8A6A3E'},{n:'Path',c:'#5E9C5A'}
+  ];
+  const elev = km => 1300 + 320*Math.sin(km/37) + 120*Math.sin(km/9.3) + 35*Math.sin(km/2.1);
+  let simElev = null, LIM = TOTAL;
+  const grade = km => { const f = simElev || elev; return Math.max(-0.15, Math.min(0.15, (f(km+0.05) - f(km-0.05)) / 100)); }; // m per m
+  function surfAt(km){
+    const k = Math.floor(km/1.5);
+    const h = Math.abs(Math.sin(k*12.9898)*43758.5453) % 1;
+    return h < 0.62 ? 0 : h < 0.80 ? 1 : h < 0.90 ? 2 : h < 0.97 ? 3 : 4;
+  }
+
+  // ---------- bike model ----------
+  const MASS = 170, CRR = 0.010, CDA = 0.85, RHO = 1.1, G = 9.81; // trike + rider + bags; panel roof adds drag
+  const isRiding = h => (h >= 8.5 && h < 12) || (h >= 13 && h < 18.5); // lunch break 12–13
+  const CAP_WH = 960, RIDER = 120, MOTOR = 200, PANEL = 600, EXTRA = 200; // EXTRA: example watts for the extra panel
+
+  const S = {
+    km: 9840, day: 57, t: 8.5*3600, batt: 72, tilt: 0, auto: true, extra: false, k: 60, paused: false, bt: true,
+    v: 0, solar: 0, motor: MOTOR, motorSet: MOTOR, dayKm: 0, rideSec: 0,
+    eIn: new Array(14).fill(0), eOut: new Array(14).fill(0)
+  };
+
+  const SR = () => 7.95 + (S.day-57)*0.012, SS = () => 18.45 - (S.day-57)*0.010; // sunrise / sunset (h)
+  function sunElev(h){ const a = SR(), b = SS(); return (h<=a||h>=b) ? 0 : 38*Math.sin(Math.PI*(h-a)/(b-a)); }
+  function idealTilt(h){ const a = SR(), b = SS(); if(h<=a||h>=b) return 0; return Math.max(-30, Math.min(30, -Math.cos(Math.PI*(h-a)/(b-a))*40)); }
+  const WX = [{n:'Sunny',f:1},{n:'Partly cloudy',f:0.72},{n:'Cloudy',f:0.38},{n:'Rain',f:0.15}];
+  function wxAt(){ const i = S.day*24 + Math.floor(S.t/3600/2); const r = Math.abs(Math.sin(i*91.17)*4375.85)%1; return r<0.5?0:r<0.75?1:r<0.92?2:3; }
+  function windKmh(){ return 10 + 5*Math.sin(S.t/5400 + S.km/50); }
+
+  function solveSpeed(P, gr, w){
+    const th = Math.atan(gr);
+    let lo = 0.3, hi = 15;
+    for(let i=0;i<40;i++){
+      const v = (lo+hi)/2;
+      const need = MASS*G*(CRR*Math.cos(th)+Math.sin(th))*v + 0.5*RHO*CDA*(v+w)*(v+w)*v;
+      if(need > P) hi = v; else lo = v;
+    }
+    return Math.min(lo, 35/3.6);
+  }
+
+  function step(dt){
+    const h = S.t/3600;
+    const riding = isRiding(h);
+    const se = sunElev(h);
+    const ideal = idealTilt(h);
+    if(S.auto) S.tilt = Math.round(ideal);
+    const tiltGain = 1 + 0.35*Math.cos(Math.abs(S.tilt - ideal)*Math.PI/180)*Math.abs(ideal)/30 - 0.35*Math.abs(S.tilt-ideal)/60;
+    const cloud = WX[wxAt()].f;
+    const watts = PANEL + (S.extra ? EXTRA : 0);
+    S.solar = se > 0 ? watts*0.8*(1.4*Math.sin(se*Math.PI/180)+0.04)*tiltGain*cloud : 0;
+    S.solar = Math.max(0, S.solar);
+
+    S.motor = (riding && S.batt > 10) ? S.motorSet : 0;
+    if(riding){
+      const gr = grade(S.km);
+      const w = windKmh()/3.6;
+      S.v = solveSpeed(0.95*(RIDER + S.motor), gr, w);
+      const dkm = S.v*dt/1000;
+      S.km = Math.min(LIM, S.km + dkm);
+      S.dayKm += dkm; S.rideSec += dt;
+    } else S.v = 0;
+
+    const inWh = S.solar*dt/3600, outWh = (S.motor/0.85)*dt/3600;
+    S.batt = Math.max(0, Math.min(100, S.batt + (inWh - outWh)/CAP_WH*100));
+    const bucket = Math.floor(h) - 6;
+    if(bucket >= 0 && bucket < 14){ S.eIn[bucket] += inWh; S.eOut[bucket] += outWh; }
+
+    S.t += dt;
+    if(S.t >= 24*3600){ S.t -= 24*3600; S.day++; S.dayKm = 0; S.rideSec = 0; S.eIn.fill(0); S.eOut.fill(0); }
+  }
+
+  // ---------- rendering ----------
+  const $ = id => document.getElementById(id);
+  const fmt = n => Math.round(n).toLocaleString('en-US').replace(/,/g,' ');
+  const nextStop = () => STOPS.find(s => s[1] > S.km) || STOPS[STOPS.length-1];
+  const prevStop = () => [...STOPS].reverse().find(s => s[1] <= S.km) || STOPS[0];
+
+  const dk = () => $('screen').classList.contains('dk');
+  const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  const MOON = '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>';
+  function setMode(d){ $('screen').classList.toggle('dk', d); $('modeIco').innerHTML = d ? SUN : MOON; $('modeBtn').setAttribute('aria-label', d ? 'Switch to light mode' : 'Switch to dark mode'); $('modeTxt').textContent = d ? 'Dark mode: on (saves battery)' : 'Dark mode: off'; }
+  $('modeBtn').addEventListener('click', () => setMode(!dk()));
+  $('modeBtn2').addEventListener('click', () => setMode(!dk()));
+
+  const WXICO = [
+    '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    '<circle cx="8" cy="8" r="3"/><path d="M8 2v1M2 8h1M3.8 3.8l.7.7M12.2 3.8l-.7.7"/><path d="M8 20h9a4 4 0 0 0 0-8 5 5 0 0 0-9.5 1.5A3.3 3.3 0 0 0 8 20z"/>',
+    '<path d="M7 19h10a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.5 2A3.5 3.5 0 0 0 7 19z"/>',
+    '<path d="M7 15h10a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.5 1.8A3.2 3.2 0 0 0 7 15z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/>'
+  ];
+  const WXCOL = ['#D48A00','#B07A10','#7C8597','#1F5FD1'];
+  const hm = x => { const hh = Math.floor(x), mm = Math.round((x-hh)*60); return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0'); };
+  // legend once
+  $('legend').innerHTML = SURF.map(s => '<span style="display:flex;align-items:center;gap:5px"><span class="sw" style="background:'+s.c+'"></span>'+s.n+'</span>').join('');
+  const baseLen = $('rBase').getTotalLength();
+
+  function strip(el, from, len, n){
+    let html = '';
+    for(let i=0;i<n;i++){ html += '<div style="flex:1;background:'+SURF[surfAt(from + i*len/n)].c+'"></div>'; }
+    el.innerHTML = html;
+  }
+
+  function render(){
+    const h = S.t/3600, hh = Math.floor(h), mm = Math.floor((h-hh)*60);
+    const clock = String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+    const ns = nextStop(), ps = prevStop();
+    const riding = isRiding(h);
+
+    $('hdrSub').textContent = 'Day '+S.day+' · '+ps[0]+' → '+ns[0];
+    $('camp').style.display = riding ? 'none' : 'block';
+    $('clock').textContent = clock;
+    $('toNext').textContent = fmt(ns[1]-S.km)+' km';
+    document.querySelector('#toNext').previousSibling.textContent = ' · '+ns[0]+' in ';
+
+    // bluetooth
+    $('btChip').classList.toggle('off', !S.bt);
+    $('btTxt').textContent = S.bt ? 'Connected' : 'No signal';
+
+    // ride
+    $('spd').textContent = (S.v*3.6).toFixed(1);
+    const sf = SURF[surfAt(S.km)];
+    $('surfSw').style.background = sf.c === '#4A4F5C' ? '#9AA3B5' : sf.c;
+    $('surfTxt').textContent = sf.n;
+    const g = grade(S.km)*100;
+    $('slope').textContent = (g>0?'+':'')+g.toFixed(1)+' %';
+    $('slope').style.color = g > 2 ? 'var(--warn)' : g < -2 ? 'var(--blue)' : 'var(--ink)';
+    $('alt').textContent = (g > 0.5 ? 'Climbing' : g < -0.5 ? 'Descending' : 'Flat')+' · '+fmt(elev(S.km))+' m';
+    const temp = 6 + 10*Math.sin(Math.PI*(h-7)/14);
+    $('temp').textContent = Math.round(temp)+' °C';
+    $('wind').textContent = 'Headwind '+Math.round(windKmh())+' km/h NE';
+    const wi = wxAt(); $('wxIco').innerHTML = WXICO[wi]; $('wxIco').style.color = dk() ? (wi===3?'#6EA0FF':wi===2?'#A3A8B4':'#F2B544') : WXCOL[wi];
+    $('wxTxt').textContent = (h < SR() || h > SS()) && wi < 2 ? 'Clear night' : WX[wi].n;
+    $('sunTimes').innerHTML = '<span>Sunrise '+hm(SR())+'</span><span>Sunset '+hm(SS())+'</span>';
+
+    const battTxt = S.bt ? Math.round(S.batt)+' %' : '— %';
+    $('batt').textContent = battTxt;
+    $('battBar').style.width = S.batt+'%';
+    $('battBar').style.background = S.batt < 20 ? 'var(--warn)' : 'var(--blue)';
+    $('battNote').textContent = !S.bt ? 'Waiting for bike data…' : S.batt <= 10 ? 'Motor off · charging from panel' : (S.solar > S.motor/0.85 ? 'Charging from panel' : 'Discharging')+' · min 10 %';
+    const whkm = (S.v > 0.5 && S.motorSet > 0) ? (S.motorSet/0.85)/(S.v*3.6) : 0;
+    const usable = Math.max(0, (S.batt-10)/100*CAP_WH);
+    $('range').textContent = S.motorSet === 0 ? 'Motor off · rider only' : whkm ? '≈ '+fmt(usable/whkm)+' km motor range' : '≈ — km motor range';
+    $('motorW').textContent = S.motorSet+' W'; $('mDown').disabled = S.motorSet <= 0; $('mUp').disabled = S.motorSet >= 350;
+    $('solarW').textContent = S.bt ? '+'+Math.round(S.solar)+' W' : '—';
+
+    // profile
+    const N = 40, pts = [];
+    let up = 0, down = 0, prev = elev(S.km);
+    const els = [];
+    for(let i=0;i<=N;i++){ const e = elev(S.km + i*20/N); els.push(e); if(i){ const d=e-prev; d>0?up+=d:down-=d; } prev=e; }
+    const mn = Math.min(...els), mx = Math.max(...els), span = Math.max(30, mx-mn);
+    els.forEach((e,i) => pts.push((i*326/N).toFixed(1)+' '+(58 - (e-mn)/span*48).toFixed(1)));
+    $('prof').innerHTML = '<path d="M'+pts.join(' L')+' L326 64 L0 64 Z" fill="'+(dk()?'#14233F':'#E7EEFB')+'"/><path d="M'+pts.join(' L')+'" fill="none" stroke="'+(dk()?'#6EA0FF':'#1F5FD1')+'" stroke-width="2.5"/><circle cx="4" cy="'+pts[0].split(' ')[1]+'" r="6" fill="'+(dk()?'#EDEDEA':'#16181D')+'" stroke="'+(dk()?'#000':'#fff')+'" stroke-width="2"/>';
+    $('climb').textContent = '+'+fmt(up)+' m / −'+fmt(down)+' m';
+    strip($('profStrip'), S.km, 20, 20);
+
+    // route
+    const frac = S.km/TOTAL;
+    $('rDone').setAttribute('stroke-dasharray', (baseLen*frac)+' '+baseLen);
+    const p = $('rBase').getPointAtLength(baseLen*frac);
+    $('rMe').setAttribute('cx', p.x); $('rMe').setAttribute('cy', p.y);
+    $('doneKm').textContent = fmt(S.km)+' km';
+    $('leftKm').textContent = fmt(TOTAL-S.km)+' km to go';
+    $('tripBar').style.width = (frac*100)+'%';
+    const daysLeft = Math.ceil((TOTAL-S.km)/174);
+    $('tripNote').textContent = Math.round(frac*100)+' % done · day '+S.day+' · Guangzhou ≈ day '+(S.day+daysLeft);
+    strip($('routeStrip'), S.km, 60, 30);
+    const idx = STOPS.indexOf(ns);
+    const show = STOPS.slice(Math.max(0, idx-1), idx+3);
+    $('stops').innerHTML = show.map(s => {
+      const done = s[1] <= S.km;
+      const isNext = s === ns;
+      const info = done ? 'done' : fmt(s[1]-S.km)+' km · ≈ day '+(S.day+Math.floor((s[1]-S.km)/174));
+      const dot = done ? 'background:#9AA3B5' : isNext ? 'background:#1F5FD1' : 'border:2px solid #1F5FD1;background:#fff';
+      return '<div><span class="dot" style="'+dot+'"></span><span style="flex:1;font-weight:600">'+s[0]+'</span><span class="small num">'+info+'</span></div>';
+    }).join('');
+
+    // energy
+    const mxE = Math.max(60, ...S.eIn, ...S.eOut);
+    let ch = '';
+    for(let i=0;i<14;i++){
+      ch += '<div style="flex:1;display:flex;align-items:flex-end;gap:1px;height:100%"><div style="flex:1;height:'+(S.eIn[i]/mxE*100)+'%;background:var(--in);border-radius:3px 3px 0 0"></div><div style="flex:1;height:'+(S.eOut[i]/mxE*100)+'%;background:var(--out);border-radius:3px 3px 0 0"></div></div>';
+    }
+    $('eChart').innerHTML = ch;
+    const sum = a => a.reduce((x,y)=>x+y,0)/1000;
+    $('eIn').textContent = sum(S.eIn).toFixed(2)+' kWh';
+    $('eOut').textContent = sum(S.eOut).toFixed(2)+' kWh';
+    const se = sunElev(h);
+    $('tilt').textContent = (S.tilt>0?'+':S.tilt<0?'−':'')+Math.abs(S.tilt)+'°';
+    $('sunTxt').textContent = (se > 0 ? 'Sun at '+Math.round(se)+'°' : 'Sun down')+' · +'+Math.round(S.solar)+' W now';
+    const a = S.tilt*Math.PI/180, cx = 36, cy = 30, L = 24;
+    $('panelLine').setAttribute('x1', (cx - L*Math.cos(a)).toFixed(1)); $('panelLine').setAttribute('y1', (cy + L*Math.sin(a)).toFixed(1));
+    $('panelLine').setAttribute('x2', (cx + L*Math.cos(a)).toFixed(1)); $('panelLine').setAttribute('y2', (cy - L*Math.sin(a)).toFixed(1));
+    $('sunDot').setAttribute('cx', (36 + idealTilt(h)*0.9).toFixed(1));
+    const totW = PANEL + (S.extra ? EXTRA : 0);
+    const roofW = S.solar*PANEL/totW, exW = S.solar - roofW;
+    const VAR = [1.03, 0.98, 1.01, 0.98];
+    const pv = VAR.map(f => roofW/4*f).concat([exW]);
+    $('pTot').textContent = Math.round(S.solar)+' W';
+    $('pGrid').innerHTML = pv.map((w,i) => {
+      const off = i === 4 && !S.extra;
+      return '<div style="border:1px solid var(--line);border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;'+(off?'opacity:.45':'')+'">'
+        + '<span class="lbl" style="letter-spacing:0">'+(i+1)+'</span>'
+        + '<span class="g num" style="font-size:17px;color:'+(off?'var(--muted)':'var(--in)')+'">'+(off?'Off':Math.round(w))+'</span>'
+        + '<span class="small" style="font-size:11px">'+(off?'&nbsp;':'W')+'</span></div>';
+    }).join('');
+    $('exTxt').textContent = S.extra ? 'On · +'+EXTRA+' W peak' : 'Off';
+    $('exBtn').setAttribute('aria-checked', String(S.extra)); $('exBtn').style.background = S.extra ? 'var(--in)' : 'var(--line)'; $('exKnob').style.left = S.extra ? '27px' : '3px';
+    $('sunDot').style.opacity = se > 0 ? 1 : 0.2;
+    $('eBatt').textContent = battTxt;
+    $('eMotor').textContent = (S.batt <= 10 ? 'Off (battery at 10 %)' : S.motorSet+' W')+' of 350 W · rider 120 W';
+    $('tAuto').setAttribute('aria-pressed', String(S.auto));
+
+    // trip
+    if(!window.__simDone) $('tDays').textContent = 'Day '+(S.day+daysLeft);
+    $('tToday').textContent = fmt(S.dayKm)+' km';
+    $('tAvg').textContent = S.rideSec > 60 ? (S.dayKm/(S.rideSec/3600)).toFixed(1)+' km/h' : '—';
+  }
+
+  // ---------- turn-by-turn navigation (from the GPX track; example turns) ----------
+  const ROADS = ['G312','G312','S201','Binhe Road','G312','X054','G312','Station Road'];
+  const TURNS = [
+    {k:'right', t:'Turn right onto ', a:90}, {k:'left', t:'Turn left onto ', a:-90},
+    {k:'sright', t:'Keep right onto ', a:40}, {k:'sleft', t:'Keep left onto ', a:-40},
+    {k:'round', t:'At the roundabout, 2nd exit onto ', a:0}
+  ];
+  const ARROW = '<path d="M12 20V6M6 11l6-6 6 6"/>';
+  const ROUND = '<circle cx="12" cy="13" r="4"/><path d="M12 9V3M9 4l3-3 3 3M12 17v5"/>';
+  const STEP = 3.7;
+  function turnN(n){ const h = Math.abs(Math.sin(n*78.233)*12345.678)%1; return {turn: TURNS[Math.floor(h*TURNS.length)], road: ROADS[n % ROADS.length], at: n*STEP + 0.6}; }
+  let voiceOn = true, lastSaid = '', navOpen = true;
+  $('navToggle').addEventListener('click', () => { navOpen = !navOpen; $('navList').style.display = navOpen ? 'flex' : 'none'; $('navList').style.flexDirection = 'column'; $('navToggle').textContent = navOpen ? 'Less ▴' : 'More ▾'; $('navToggle').setAttribute('aria-expanded', String(navOpen)); });
+  const VON = '<path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>';
+  const VOFF = '<path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/>';
+  function say(txt){
+    if(!voiceOn || !('speechSynthesis' in window)) return;
+    try{ const u = new SpeechSynthesisUtterance(txt); u.lang='en-GB'; aud.volume = 0.2; u.onend = () => { aud.volume = 1; }; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){}
+  }
+  $('voiceBtn').addEventListener('click', () => { voiceOn = !voiceOn; $('voiceIco').innerHTML = voiceOn ? VON : VOFF; $('voiceBtn').setAttribute('aria-pressed', String(voiceOn)); $('voiceBtn').setAttribute('aria-label', voiceOn ? 'Voice guidance on' : 'Voice guidance off'); });
+  $('voiceIco').innerHTML = VON;
+  function renderNav(){
+    let n = Math.ceil((S.km - 0.6)/STEP); if(turnN(n).at <= S.km) n++;
+    const a = turnN(n), b = turnN(n+1);
+    const dm = (a.at - S.km)*1000;
+    $('navDist').textContent = dm >= 1000 ? (dm/1000).toFixed(1)+' km' : (Math.round(dm/10)*10)+' m';
+    $('navTxt').textContent = a.turn.t + a.road;
+    const surfNext = SURF[surfAt(a.at + 0.2)].n;
+    $('navThen').textContent = 'Then ' + b.turn.t.replace(' onto ','').toLowerCase() + ' in ' + ((b.at-a.at)).toFixed(1) + ' km · ' + surfNext + ' after turn';
+    const prevRoad = turnN(n-1).road;
+    const vAvg = S.v > 1 ? S.v*3.6 : 15;
+    const etaH = (S.t/3600) + (a.at - S.km)/vAvg;
+    const ns = nextStop(), dist = ns[1]-S.km;
+    $('navRoad').textContent = 'On ' + prevRoad + ' · turn at ' + hm(etaH % 24) + ' · ' + ns[0] + ' ' + fmt(dist) + ' km';
+    if(navOpen){
+      let html = '';
+      for(let i=0;i<4;i++){
+        const t = turnN(n+i), d = t.at - S.km;
+        const ico = t.turn.k === 'round' ? ROUND : '<g transform="rotate('+t.turn.a+' 12 12)">'+ARROW+'</g>';
+        html += '<div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ico+'</svg><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.turn.t+t.road+'</span><span class="small num">'+d.toFixed(1)+' km</span></div>';
+      }
+      html += '<div class="small num" style="justify-content:space-between"><span>Elevation to '+ns[0]+'</span><span>'+fmt(elev(ns[1]))+' m (now '+fmt(elev(S.km))+' m)</span></div>';
+      $('navList').innerHTML = html;
+    }
+    $('navIco').innerHTML = a.turn.k === 'round' ? ROUND : '<g transform="rotate('+a.turn.a+' 12 12)">'+ARROW+'</g>';
+    const riding = isRiding(S.t/3600);
+    if(riding){
+      const key500 = n+'-500', key50 = n+'-50';
+      if(dm < 500 && dm > 150 && lastSaid !== key500 && lastSaid !== key50){ lastSaid = key500; say('In 500 metres, ' + a.turn.t + a.road); }
+      if(dm < 60 && lastSaid !== key50){ lastSaid = key50; say(a.turn.t + a.road); }
+    }
+  }
+  $('mUp').addEventListener('click', () => { S.motorSet = Math.min(350, S.motorSet + 25); });
+  $('mDown').addEventListener('click', () => { S.motorSet = Math.max(0, S.motorSet - 25); });
+
+  // ---------- GPX loading ----------
+  let GPX = null; // {name, km:[], ele:[], total}
+  function hav(a,b){ const R=6371, r=Math.PI/180, dLa=(b[0]-a[0])*r, dLo=(b[1]-a[1])*r; const x=Math.sin(dLa/2)**2+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(x)); }
+  function gpxElev(km){
+    const K = GPX.km, E = GPX.ele; if(km <= 0) return E[0]; if(km >= GPX.total) return E[E.length-1];
+    let lo = 0, hi = K.length-1; while(hi-lo > 1){ const m=(lo+hi)>>1; if(K[m] <= km) lo=m; else hi=m; }
+    const f = (km-K[lo])/Math.max(1e-6, K[hi]-K[lo]); return E[lo] + f*(E[hi]-E[lo]);
+  }
+  $('gpxIn').addEventListener('change', async e => {
+    const f = e.target.files[0]; if(!f) return;
+    try{
+      const doc = new DOMParser().parseFromString(await f.text(), 'application/xml');
+      const pts = [...doc.querySelectorAll('trkpt, rtept')];
+      if(pts.length < 2) throw new Error('no points');
+      const km = [0], ele = []; let prev = null, lastE = 0;
+      pts.forEach((p,i) => {
+        const ll = [parseFloat(p.getAttribute('lat')), parseFloat(p.getAttribute('lon'))];
+        const eEl = p.getElementsByTagName('ele')[0]; const e = eEl ? parseFloat(eEl.textContent) : lastE; lastE = isNaN(e) ? lastE : e;
+        if(prev) km.push(km[km.length-1] + hav(prev, ll)); prev = ll; ele.push(lastE);
+      });
+      // smooth elevation over ~5 points to remove GPS noise
+      const sm = ele.map((_,i) => { let a=0,n=0; for(let j=Math.max(0,i-2); j<=Math.min(ele.length-1,i+2); j++){ a+=ele[j]; n++; } return a/n; });
+      GPX = { name: f.name, km: km, ele: sm, total: km[km.length-1] };
+      $('gpxInfo').textContent = 'Route: ' + f.name + ' · ' + fmt(GPX.total) + ' km · ' + pts.length.toLocaleString() + ' points';
+    }catch(err){ $('gpxInfo').textContent = 'Could not read this GPX file. Export it again from komoot as “GPX track”.'; }
+  });
+
+  // ---------- full-trip simulation ----------
+  function runSimulation(){
+    const save = JSON.parse(JSON.stringify(S));
+    const total = GPX ? GPX.total : TOTAL;
+    simElev = GPX ? gpxElev : null; LIM = total;
+    Object.assign(S, { km: 0, day: 1, t: 8.5*3600, batt: 100, auto: true, bt: true, dayKm: 0, rideSec: 0, eIn: new Array(14).fill(0), eOut: new Array(14).fill(0) });
+    const days = []; let startKm = 0, minB = 100, cutDays = new Set(), solarWh = 0, motorWh = 0, guard = 0, curDay = 1;
+    while(S.km < total && guard++ < 400000){
+      step(60);
+      const h = S.t/3600; if(isRiding(h)){ minB = Math.min(minB, S.batt); if(S.batt <= 10) cutDays.add(S.day); }
+      solarWh += S.solar*60/3600; motorWh += (S.motor/0.85)*60/3600;
+      if(S.day !== curDay){ days.push({ d: curDay, from: startKm, to: S.km }); startKm = S.km; curDay = S.day; }
+    }
+    days.push({ d: curDay, from: startKm, to: S.km });
+    const res = { days, minB, cut: cutDays.size, solarWh, motorWh, total, gpx: !!GPX };
+    for(const k in save) S[k] = save[k];
+    simElev = null; LIM = TOTAL;
+    return res;
+  }
+  function dayLabel(d){
+    const lim = GPX ? null : STOPS.filter(x => x[1] > d.from && x[1] <= d.to + 0.5).map(x => x[0]);
+    const range = 'km ' + fmt(d.from) + ' → ' + fmt(d.to);
+    return lim && lim.length ? range + ' · ' + lim.join(', ') : range;
+  }
+  function placeAt(km){ if(GPX) return 'km ' + fmt(km); const p = [...STOPS].reverse().find(s => s[1] <= km + 1); return p ? p[0] : 'Lyon'; }
+  $('runSim').addEventListener('click', () => {
+    $('runSim').textContent = 'Running…';
+    setTimeout(() => {
+      const r = runSimulation();
+      const n = r.days.length, avg = r.total / n;
+      $('simWhat').textContent = r.gpx ? 'Your GPX' : 'Example route';
+      const tile = (label, val, col) => '<section class="card" style="padding:10px 12px;gap:2px"><span class="small">'+label+'</span><span class="g num" style="font-size:22px'+(col?';color:'+col:'')+'">'+val+'</span></section>';
+      $('simTiles').innerHTML = tile('Days', n) + tile('Average per day', fmt(avg)+' km') + tile('Solar in', fmt(r.solarWh/1000)+' kWh', 'var(--in)') + tile('Motor out', fmt(r.motorWh/1000)+' kWh', 'var(--out)') + tile('Lowest battery', Math.round(r.minB)+' %') + tile('Days motor stopped', r.cut, r.cut ? 'var(--warn)' : '');
+      $('simDays').innerHTML = r.days.map(d => '<div class="num" style="font-size:13px"><span style="width:52px;color:var(--muted)">Day '+d.d+'</span><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+dayLabel(d)+'</span><b>'+fmt(d.to-d.from)+' km</b></div>').join('');
+      $('simRes').style.display = 'flex';
+      window.__simDone = true; $('tDays').textContent = n + ' days';
+      $('runSim').textContent = 'Run again';
+    }, 30);
+  });
+  setMode(true);
+  // ---------- loop ----------
+  let last = performance.now();
+  function frame(now){
+    const realDt = Math.min(0.5, (now-last)/1000); last = now;
+    if(!S.paused){
+      let simDt = realDt*S.k;
+      const h = S.t/3600;
+      if(!(h >= 6 && h < 20)) simDt *= 20; // skip the night faster
+      while(simDt > 0){ const d = Math.min(5, simDt); step(d); simDt -= d; }
+    }
+    render(); renderNav();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ---------- controls ----------
+  document.querySelectorAll('#speedSeg button').forEach(b => b.addEventListener('click', () => {
+    S.k = Number(b.dataset.k);
+    document.querySelectorAll('#speedSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+  $('pauseBtn').addEventListener('click', () => { S.paused = !S.paused; $('pauseBtn').textContent = S.paused ? 'Resume' : 'Pause'; });
+  $('btBtn').addEventListener('click', () => { S.bt = !S.bt; $('btBtn').textContent = S.bt ? 'Simulate Bluetooth drop' : 'Reconnect Bluetooth'; });
+  $('tAuto').addEventListener('click', () => { S.auto = !S.auto; });
+  $('tUp').addEventListener('click', () => { S.auto = false; S.tilt = Math.min(30, S.tilt + 5); });
+  $('tDown').addEventListener('click', () => { S.auto = false; S.tilt = Math.max(-30, S.tilt - 5); });
+  $('exBtn').addEventListener('click', () => { S.extra = !S.extra; });
+  const titles = {ride:'Ride', route:'Route', energy:'Energy', talk:'Talk', trip:'Trip plan'};
+  document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('nav.tabs button').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-'+b.dataset.v));
+    $('hdrTitle').textContent = titles[b.dataset.v];
+  }));
+
+  // ---------- music (plays songs you pick from the device) ----------
+  const aud = $('aud'); let list = [], cur = 0;
+  const PLAY = '<path d="M7 4l13 8-13 8z"/>', PAUSE = '<path d="M7 4h4v16H7zM13 4h4v16h-4z"/>';
+  function load(i){ if(!list.length) return; cur = (i+list.length)%list.length; aud.src = URL.createObjectURL(list[cur]); $('trk').textContent = list[cur].name.replace(/\.[^.]+$/,''); }
+  function setIco(){ $('playIco').innerHTML = aud.paused ? PLAY : PAUSE; $('play').setAttribute('aria-label', aud.paused ? 'Play' : 'Pause'); }
+  $('songs').addEventListener('change', e => { list = [...e.target.files]; load(0); aud.play().catch(()=>{}).finally(setIco); });
+  $('play').addEventListener('click', () => {
+    if(!list.length){ $('trk').textContent = 'Tap “Add songs” first'; return; }
+    if(aud.paused) aud.play().catch(()=>{}).finally(setIco); else { aud.pause(); setIco(); }
+  });
+  $('next').addEventListener('click', () => { if(!list.length) return; load(cur+1); aud.play().catch(()=>{}).finally(setIco); });
+  aud.addEventListener('ended', () => { load(cur+1); aud.play().catch(()=>{}); });
+  aud.addEventListener('pause', setIco); aud.addEventListener('play', setIco);
+
+  // ---------- walkie-talkie (demo: transmit + simulated replies) ----------
+  const ptt = $('ptt'); let txStart = 0;
+  const duck = on => { aud.volume = on ? 0.2 : 1; };
+  const clockNow = () => { const h=S.t/3600, hh=Math.floor(h), mm=Math.floor((h-hh)*60); return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0'); };
+  function addMsg(t){ const d=document.createElement('div'); d.style.padding='4px 0'; d.textContent=t; const l=$('msgList'); l.insertBefore(d,l.firstChild); while(l.children.length>4) l.removeChild(l.lastChild); }
+  function down(e){ e.preventDefault(); txStart = Date.now(); ptt.classList.add('tx'); $('pttTxt').textContent = 'Talking…'; duck(true); }
+  function up(){ if(!txStart) return; const secs = Math.max(1, Math.round((Date.now()-txStart)/1000)); txStart = 0;
+    ptt.classList.remove('tx'); $('pttTxt').textContent = 'Hold to talk'; addMsg('You · '+clockNow()+' · voice message · 0:'+String(secs).padStart(2,'0'));
+    setTimeout(() => { ptt.classList.add('rx'); $('pttTxt').textContent = 'Rider 2 talking'; duck(true);
+      setTimeout(() => { ptt.classList.remove('rx'); $('pttTxt').textContent = 'Hold to talk'; duck(false); addMsg('Rider 2 · '+clockNow()+' · voice message · 0:03'); }, 2500);
+    }, 1500);
+  }
+  ptt.addEventListener('pointerdown', down);
+  ptt.addEventListener('pointerup', up); ptt.addEventListener('pointerleave', up); ptt.addEventListener('pointercancel', up);
+  ptt.addEventListener('keydown', e => { if((e.key===' '||e.key==='Enter') && !txStart) down(e); });
+  ptt.addEventListener('keyup', e => { if(e.key===' '||e.key==='Enter') up(); });
+})();
+</script>
+</body>
+</html>
