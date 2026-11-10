@@ -12,6 +12,7 @@ import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -30,11 +31,13 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import java.io.File;
 import java.util.List;
 import java.util.Locale;
 
 import org.json.JSONObject;
 
+import androidx.core.content.FileProvider;
 import androidx.webkit.WebViewAssetLoader;
 
 /**
@@ -46,6 +49,7 @@ public class MainActivity extends Activity {
     private static final int PICK_FILE = 1;
     private WebView web;
     private ValueCallback<Uri[]> pending;
+    private Uri photoUri;
     private TextToSpeech tts;
     private Talkie talkie;
     private GnssStatus.Callback gnssCb;
@@ -227,9 +231,33 @@ public class MainActivity extends Activity {
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (pending != null) pending.onReceiveValue(null);
                 pending = callback;
+                String[] types = params.getAcceptTypes();
+                boolean image = types != null && types.length > 0 && types[0].startsWith("image");
+                if (image) {
+                    // "Take a photo": open the camera; the photo is written to a private file we can read back
+                    Intent cam = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    try {
+                        File dir = new File(getCacheDir(), "photos");
+                        dir.mkdirs();
+                        File f = new File(dir, "p" + System.currentTimeMillis() + ".jpg");
+                        photoUri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".files", f);
+                        cam.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+                        cam.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    } catch (Exception e) {
+                        photoUri = null;
+                    }
+                    Intent gallery = new Intent(Intent.ACTION_GET_CONTENT);
+                    gallery.addCategory(Intent.CATEGORY_OPENABLE);
+                    gallery.setType("image/*");
+                    Intent launch;
+                    if (photoUri != null && params.isCaptureEnabled()) launch = cam;
+                    else { launch = Intent.createChooser(gallery, "Photo"); if (photoUri != null) launch.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{ cam }); }
+                    try { startActivityForResult(launch, PICK_FILE); }
+                    catch (Exception e) { pending = null; return false; }
+                    return true;
+                }
                 Intent i = new Intent(Intent.ACTION_GET_CONTENT);
                 i.addCategory(Intent.CATEGORY_OPENABLE);
-                String[] types = params.getAcceptTypes();
                 boolean audio = types != null && types.length > 0 && types[0].startsWith("audio");
                 i.setType(audio ? "audio/*" : "*/*");
                 i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
@@ -266,6 +294,8 @@ public class MainActivity extends Activity {
                 result = new Uri[]{ data.getData() };
             }
         }
+        if (result == null && resultCode == RESULT_OK && photoUri != null) result = new Uri[]{ photoUri };
+        photoUri = null;
         pending.onReceiveValue(result);
         pending = null;
     }

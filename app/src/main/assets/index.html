@@ -48,7 +48,7 @@
   .bar>b{position:absolute;left:10%;top:0;bottom:0;width:2px;background:var(--warn)}
   .small{font-size:13px;color:var(--muted)}
   .strip{display:flex;height:8px;border-radius:4px;overflow:hidden}
-  nav.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:#fff;border-top:1px solid var(--line);padding:6px 6px 12px}
+  nav.tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));background:#fff;border-top:1px solid var(--line);padding:6px 6px 12px}
   nav.tabs button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;font:600 12px Inter,sans-serif;color:var(--muted);cursor:pointer}
   nav.tabs button[aria-selected="true"]{color:var(--blue)}
   .list>div{display:flex;align-items:center;gap:12px;min-height:42px;border-bottom:1px solid #F0EEE8;font-size:14px}
@@ -118,6 +118,24 @@
   .navb.off{background:#7A1F1F!important;color:#fff!important}
   .mz{width:40px;height:40px;border-radius:12px;border:0;background:rgba(22,24,29,.85);color:#fff;font:700 20px Inter,sans-serif;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3)}
   .chips button[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+  .dtile{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-height:78px}
+  .dtile.big{grid-column:span 2}
+  .dtile .dl{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  .dtile .dv{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:28px;line-height:1.1}
+  .dtile.big .dv{font-size:52px}
+  .dtile .du{font-size:13px;color:var(--muted)}
+  .hornbtn{position:absolute;right:14px;bottom:178px;width:60px;height:60px;border-radius:30px;border:0;background:#F2B544;color:#16181D;display:none;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.35);z-index:4;cursor:pointer}
+  .hornbtn:active{transform:scale(.94)}
+  .hornbtn.show{display:flex}
+  .hsel{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+  .hsel button{height:64px;border-radius:12px;border:1px solid var(--line);background:var(--ground);color:var(--ink);font:600 11px Inter,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
+  .hsel button[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+  .pickrow{display:flex;align-items:center;gap:10px;min-height:42px;border-bottom:1px solid var(--line);font-size:14px}
+  .pickrow:last-child{border-bottom:0}
+  .camfab{bottom:248px;background:#fff;color:#16181D}
+  .pmark{position:absolute;width:40px;height:40px;margin:-46px 0 0 -20px;border-radius:10px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.45);background:#333 center/cover no-repeat;cursor:pointer;padding:0}
+  .pmark::after{content:"";position:absolute;left:50%;bottom:-9px;margin-left:-6px;border:6px solid transparent;border-top-color:#fff}
+  #photoView img{width:100%;max-height:60vh;object-fit:contain;border-radius:12px;background:#000}
 </style>
 </head>
 <body>
@@ -125,9 +143,22 @@
 <section class="panel" aria-label="Demo controls">
   <span class="lbl">Demo · simulated data</span>
   <div style="display:flex;align-items:center;gap:14px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="88" height="88" role="img" aria-label="The Sun Trip 2028 app icon">
-  <rect width="512" height="512" rx="112" fill="#10213F"/>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4FB3F6"/>
+      <stop offset="0.75" stop-color="#9ED8FB"/>
+      <stop offset="1" stop-color="#CDEBFC"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#sky)"/>
+  <!-- small clouds -->
+  <g fill="#FFFFFF" opacity=".9">
+    <ellipse cx="120" cy="120" rx="46" ry="18"/>
+    <ellipse cx="148" cy="108" rx="30" ry="20"/>
+    <ellipse cx="96" cy="112" rx="22" ry="14"/>
+  </g>
   <!-- sun -->
-  <g stroke="#F6B73C" stroke-width="16" stroke-linecap="round">
+  <g stroke="#FFB300" stroke-width="16" stroke-linecap="round">
     <line x1="372" y1="58" x2="372" y2="86"/>
     <line x1="372" y1="198" x2="372" y2="226"/>
     <line x1="288" y1="142" x2="316" y2="142"/>
@@ -137,16 +168,16 @@
     <line x1="313" y1="201" x2="332" y2="182"/>
     <line x1="412" y1="102" x2="431" y2="83"/>
   </g>
-  <circle cx="372" cy="142" r="44" fill="#F6B73C"/>
+  <circle cx="372" cy="142" r="44" fill="#FFC72C"/>
   <!-- solar panel roof -->
   <g transform="rotate(-8 230 236)">
-    <rect x="96" y="214" width="268" height="44" rx="6" fill="#2F6FDB" stroke="#CFE0FA" stroke-width="6"/>
-    <path d="M163 214v44M230 214v44M297 214v44M96 236h268" stroke="#CFE0FA" stroke-width="4"/>
+    <rect x="96" y="214" width="268" height="44" rx="6" fill="#163A7A" stroke="#FFFFFF" stroke-width="6"/>
+    <path d="M163 214v44M230 214v44M297 214v44M96 236h268" stroke="#7FB2FF" stroke-width="4"/>
   </g>
   <!-- panel posts -->
-  <path d="M150 268 L176 352 M318 246 L330 330" stroke="#CFE0FA" stroke-width="10" stroke-linecap="round"/>
+  <path d="M150 268 L176 352 M318 246 L330 330" stroke="#163A7A" stroke-width="10" stroke-linecap="round"/>
   <!-- recumbent e-trike -->
-  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
+  <g fill="none" stroke="#10213F" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="148" cy="392" r="50" stroke-width="14"/>
     <circle cx="362" cy="380" r="62" stroke-width="14"/>
     <circle cx="362" cy="380" r="16" stroke-width="10"/>
@@ -155,9 +186,9 @@
     <path d="M118 352 L98 330" stroke-width="12"/>
   </g>
   <!-- lightning bolt on hub motor -->
-  <path d="M368 352 L352 384 L366 384 L356 410 L378 374 L364 374 Z" fill="#F6B73C"/>
+  <path d="M368 352 L352 384 L366 384 L356 410 L378 374 L364 374 Z" fill="#FFB300" stroke="#10213F" stroke-width="2"/>
   <!-- road -->
-  <path d="M60 460 H452" stroke="#2F6FDB" stroke-width="10" stroke-linecap="round" stroke-dasharray="40 26"/>
+  <path d="M60 460 H452" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-dasharray="40 26"/>
 </svg>
 <h2>The Sun Trip 2028</h2></div>
   <p>This shows how the app would look and behave during the ride. The values are simulated: speed comes from the slope, wind and power (rider 120 W + motor 200 W), and the battery charges only from the solar panels (600 W roof panel + extra panel when switched on).</p>
@@ -337,6 +368,21 @@
   </div>
 
   <!-- ROUTE -->
+  <div class="view" id="v-dash">
+    <div class="row" style="align-items:center"><span class="small" id="dashMode">—</span><button type="button" class="btn" id="dashEdit" style="height:40px;padding:0 14px">Customize</button></div>
+    <section class="card" id="dashPick" style="display:none;gap:4px">
+      <div class="row"><span class="lbl">Show on the dashboard</span><button type="button" class="btn" id="dashDone" style="height:36px;padding:0 14px">Done</button></div>
+      <div class="small" style="margin-bottom:4px">Tick what you want to see. “Large” makes a tile full width. Use ↑ ↓ to change the order.</div>
+      <div id="dashList"></div>
+    </section>
+    <div class="grid2" id="dashGrid"></div>
+    <section class="card" style="gap:10px">
+      <div class="row"><span class="lbl">Horn</span><span class="small">tap a sound, then the big button</span></div>
+      <div class="hsel" id="hornSel"></div>
+      <button type="button" class="rb go" id="hornPlay" style="height:64px;font-size:20px;background:#F2B544;color:#16181D"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10v4h4l6 5V5L7 10z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg><span id="hornName">Horn</span></button>
+      <label class="small" style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="hornFloat" checked> Show the horn button on the Ride and Dash screens</label>
+    </section>
+  </div>
   <div class="view" id="v-route">
     <section class="card gpsonly" style="flex-direction:column;gap:8px;display:none">
       <div class="row"><span class="lbl">Your route</span><span class="small" id="rRouteSt"></span></div>
@@ -487,6 +533,16 @@
     </section>
   </div>
 
+  <button type="button" class="hornbtn camfab" id="camFab" aria-label="Take a photo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+  <input type="file" id="photoIn" accept="image/*" capture="environment" style="display:none">
+  <div class="dlg" id="photoView" role="dialog" aria-modal="true" aria-label="Photo">
+    <div>
+      <img id="pvImg" alt="Photo taken during the ride">
+      <div class="small num" id="pvCap">—</div>
+      <div class="ridebar"><button type="button" class="rb stop" id="pvDel" style="flex:0 0 110px">Delete</button><button type="button" class="rb pause" id="pvClose" style="flex:1">Close</button></div>
+    </div>
+  </div>
+  <button type="button" class="hornbtn" id="hornFab" aria-label="Horn"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10v4h4l6 5V5L7 10z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg></button>
   <div class="mini" aria-label="Music player">
     <div class="art" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></div>
     <div style="flex:1;min-width:0">
@@ -500,6 +556,7 @@
 
   <nav class="tabs" role="tablist" aria-label="Main">
     <button type="button" role="tab" aria-selected="true" data-v="ride"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4M12 3v2"/></svg>Ride</button>
+    <button type="button" role="tab" aria-selected="false" data-v="dash"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="10" rx="2"/><rect x="13" y="3" width="8" height="6" rx="2"/><rect x="13" y="11" width="8" height="10" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/></svg>Dash</button>
     <button type="button" role="tab" aria-selected="false" data-v="route"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/></svg>Route</button>
     <button type="button" role="tab" aria-selected="false" data-v="energy"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Energy</button>
     <button type="button" role="tab" aria-selected="false" data-v="talk"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Talk</button>
@@ -1248,12 +1305,12 @@
   function simPath(from, to){ const out = []; const n = Math.max(2, Math.ceil((to - from)/2)); for(let i=0;i<=n;i++) out.push(llAt(from + (to-from)*i/n)); return out; }
   const px = (lat, lon, z) => { const n = 256*Math.pow(2, z), x = (lon + 180)/360*n, s2 = Math.sin(lat*Math.PI/180); return [x, (0.5 - Math.log((1+s2)/(1-s2))/(4*Math.PI))*n]; };
   function createMap(el, attrEl, inBtn, outBtn, centerBtn){
-    el.innerHTML = '<div style="position:absolute;inset:0"></div><div style="position:absolute;inset:0;pointer-events:none"></div>'
+    el.innerHTML = '<div style="position:absolute;inset:0"></div><div style="position:absolute;inset:0;pointer-events:none"></div><div style="position:absolute;inset:0;pointer-events:none"></div>'
       + '<div style="position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px;z-index:2">'
       + '<button type="button" class="mz" data-z="1" aria-label="Zoom in">+</button><button type="button" class="mz" data-z="-1" aria-label="Zoom out">−</button>'
       + (centerBtn ? '<button type="button" class="mz" data-z="0" aria-label="Centre on my position">◎</button>' : '') + '</div>';
-    const tl = el.children[0], sv = el.children[1], tiles = {};
-    const M = { layers: [], z: 12, cx: 0, cy: 0, china: false, marker: null, follow: false, ends: false, note: '', dragT: 0 };
+    const tl = el.children[0], sv = el.children[1], pl = el.children[2], tiles = {};
+    const M = { photos: [], layers: [], z: 12, cx: 0, cy: 0, china: false, marker: null, follow: false, ends: false, note: '', dragT: 0 };
     const cv = p => M.china ? toGcj(p[0], p[1]) : p;
     function size(){ return [el.clientWidth || 330, el.clientHeight || 220]; }
     function fit(pts){
@@ -1272,6 +1329,7 @@
       if(opts.zoom){ M.z = opts.zoom; }
       draw();
     }
+    function setPhotos(list){ M.photos = list || []; draw(); }
     function setMarker(p, center){ M.marker = p ? cv(p) : null; if(M.marker && (center || (M.follow && Date.now() - M.dragT > 10000))){ const q = px(M.marker[0], M.marker[1], M.z); M.cx = q[0]; M.cy = q[1]; } draw(); }
     function draw(){
       const [W, H] = size(), z = M.z, ox = M.cx - W/2, oy = M.cy - H/2, n = Math.pow(2, z), need = {};
@@ -1302,6 +1360,7 @@
           + '<text x="' + (x0 + L/2).toFixed(1) + '" y="' + (y0-9) + '" text-anchor="middle" fill="#16181D" stroke="#fff" stroke-width="3" paint-order="stroke">' + lab + '</text></g>';
       }
       sv.innerHTML = g + '</svg>';
+      pl.innerHTML = M.photos.map(ph => { const c = cv([ph.lat, ph.lon]), q = px(c[0], c[1], z); const x = q[0]-ox, y = q[1]-oy; if(x < -30 || y < -30 || x > W+30 || y > H+60) return ''; return '<button type="button" class="pmark" data-ph="' + ph.id + '" aria-label="Photo at ' + new Date(ph.t).toTimeString().slice(0,5) + '" style="left:' + x.toFixed(0) + 'px;top:' + y.toFixed(0) + 'px;pointer-events:auto;background-image:url(' + ph.thumb + ')"></button>'; }).join('');
       if(attrEl) attrEl.textContent = (M.china ? '© AutoNavi (Gaode) map' : '© OpenStreetMap contributors') + (M.note ? ' · ' + M.note : '');
     }
     const zoom = d => { const nz = Math.max(3, Math.min(18, M.z + d)); if(nz === M.z) return; const f = Math.pow(2, nz - M.z); M.cx *= f; M.cy *= f; M.z = nz; draw(); };
@@ -1322,7 +1381,9 @@
     const end = e => { ptr.delete(e.pointerId); if(ptr.size < 2) pinch0 = 0; if(ptr.size === 1){ const v = [...ptr.values()][0]; drag = [v[0], v[1], M.cx, M.cy]; } if(ptr.size === 0){ drag = null; el.style.cursor = 'grab'; } };
     el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
     el.querySelectorAll('.mz').forEach(b => b.addEventListener('click', ev => { ev.stopPropagation(); const d = Number(b.dataset.z); if(d) zoom(d); else { M.dragT = 0; if(M.marker){ const q = px(M.marker[0], M.marker[1], M.z); M.cx = q[0]; M.cy = q[1]; draw(); } } }));
-    return { set, setMarker, draw, M };
+    pl.addEventListener('click', e => { const b = e.target.closest('.pmark'); if(b){ e.stopPropagation(); openPhoto(b.dataset.ph); } });
+    pl.addEventListener('pointerdown', e => { if(e.target.closest('.pmark')) e.stopPropagation(); });
+    return { set, setMarker, setPhotos, draw, M };
   }
   const histMap = createMap($('hMap'), $('hMapAttr'));
   function showMap(segs, ghost){
@@ -1401,7 +1462,7 @@
       + t('Climb', '+'+fmt(r.up)+' m') + t('Descent', '−'+fmt(r.down)+' m') + t('Rides', String((r.rides || []).length)) + t('Battery, solar, motor', '—');
     $('hRides').innerHTML = (r.rides || []).map((x,k) => '<div class="num" style="font-size:13px"><span style="width:56px;color:var(--muted)">Ride '+(k+1)+'</span><span style="flex:1">'+tm(x.start)+' – '+tm(x.end)+'</span><b>'+x.km.toFixed(1)+' km</b><span style="width:64px;text-align:right;color:var(--muted)">'+hmDur(x.sec)+'</span></div>').join('');
     if(!live || $('trTip').style.display !== 'block'){ let rr = r; if(live && r.aSec > 30 && r.slot >= 0){ rr = Object.assign({}, r, { tr: r.tr.concat([[ +((r.slot+1)/6).toFixed(3), +(r.aKm/(r.aSec/3600)).toFixed(1), null, null, null, GP.altF == null ? null : Math.round(GP.altF) ]]) }); } drawTrend(rr); }
-    const key = r.date + ':' + (live ? Math.floor(Date.now()/15000) : 'x');
+    const key = r.date + ':' + (live ? 'p' + Math.floor((GP.trk ? GP.trk.reduce((n, sg) => n + sg.length, 0) : 0)/10) : 'x');
     if(mapShownFor !== key){ mapShownFor = key; showMap(live && GP.trk ? GP.trk : loadTrack(r.date)); }
     $('hPrev').disabled = live ? list.length === 0 : hIdx <= 0;
     $('hNext').disabled = live;
@@ -1439,7 +1500,7 @@
   $('tUp').addEventListener('click', () => { S.auto = false; S.tilt = Math.min(30, S.tilt + 5); });
   $('tDown').addEventListener('click', () => { S.auto = false; S.tilt = Math.max(-30, S.tilt - 5); });
   $('exBtn').addEventListener('click', () => { S.extra = !S.extra; });
-  const titles = {ride:'Ride', route:'Route', energy:'Energy', talk:'Talk', trip:'Trip plan'};
+  const titles = {ride:'Ride', dash:'Dashboard', route:'Route', energy:'Energy', talk:'Talk', trip:'Trip plan'};
   document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('nav.tabs button').forEach(x => x.setAttribute('aria-selected', String(x === b)));
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-'+b.dataset.v));
@@ -1517,6 +1578,151 @@
   ptt.addEventListener('pointerup', () => up()); ptt.addEventListener('pointerleave', () => up()); ptt.addEventListener('pointercancel', () => up());
   ptt.addEventListener('keydown', e => { if((e.key===' '||e.key==='Enter') && !txStart) down(e); });
   ptt.addEventListener('keyup', e => { if(e.key===' '||e.key==='Enter') up(); });
+
+  // ---------- dashboard (choose the data you want) ----------
+  const gps = () => MODE === 'gps';
+  const nf1 = v => v == null || isNaN(v) ? '—' : v.toFixed(1);
+  function navTurnText(){
+    if(gps()){ if(!(GPX && GPX.nav && NAV.matched)) return ['—', 'no route']; if(NAV.off) return [(NAV.dist >= 1000 ? fmt(NAV.dist/1000) + ' km' : Math.round(NAV.dist) + ' m'), 'off route']; const t = NAV.turns.find(x => x.km > NAV.km + 0.005); if(!t) return [fmt((GPX.total - NAV.km)*1000) + ' m', 'to the end']; const dm = (t.km - NAV.km)*1000; return [(dm >= 1000 ? (dm/1000).toFixed(1) + ' km' : Math.round(dm/10)*10 + ' m'), turnText(t.a)]; }
+    let n = Math.ceil((S.km - 0.6)/STEP); if(turnN(n).at <= S.km) n++; const a = turnN(n), dm = (a.at - S.km)*1000; return [(dm >= 1000 ? (dm/1000).toFixed(1) + ' km' : Math.round(dm/10)*10 + ' m'), a.turn.t + a.road];
+  }
+  const DT = [
+    { id: 'speed', l: 'Speed', u: 'km/h', v: () => nf1(gps() ? ((S.started && !S.paused) ? GP.v*3.6 : 0) : S.v*3.6) },
+    { id: 'turn', l: 'Next turn', v: () => navTurnText()[0], u: () => navTurnText()[1] },
+    { id: 'dist', l: 'Distance today', u: 'km', v: () => nf1(gps() ? (GP.rec ? GP.rec.km : 0) : S.dayKm) },
+    { id: 'time', l: 'Riding time', u: '', v: () => hmDur(gps() ? (GP.rec ? GP.rec.sec : 0) : S.rideSec) },
+    { id: 'avg', l: 'Average speed', u: 'km/h', v: () => { const r = gps() ? GP.rec : { km: S.dayKm, sec: S.rideSec }; return r && r.sec > 60 ? (r.km/(r.sec/3600)).toFixed(1) : '—'; } },
+    { id: 'top', l: 'Top speed', u: 'km/h', v: () => gps() ? nf1(GP.rec ? GP.rec.maxV : 0) : nf1(S.cur ? S.cur.maxV : 0) },
+    { id: 'togo', l: 'To go', u: () => gps() ? 'km to end of route' : 'km to ' + nextStop()[0], v: () => gps() ? (GPX && GPX.nav && NAV.matched ? fmt(GPX.total - NAV.km) : '—') : fmt(nextStop()[1] - S.km) },
+    { id: 'alt', l: 'Altitude', u: 'm', v: () => gps() ? (GP.altF == null ? '—' : fmt(GP.altF)) : fmt(elev(S.km)) },
+    { id: 'slope', l: 'Slope', u: '%', v: () => { const g = gps() ? (GPX && GPX.nav && NAV.matched && !NAV.off ? (gpxElev(Math.min(GPX.total, NAV.km + 0.1)) - gpxElev(NAV.km))/100*100 : GP.slope) : grade(S.km)*100; return g == null ? '—' : (g > 0 ? '+' : '') + g.toFixed(1); } },
+    { id: 'climb', l: 'Climb today', u: 'm', v: () => '+' + fmt(gps() ? (GP.rec ? GP.rec.up : 0) : (S.cur ? S.cur.up : 0)) },
+    { id: 'batt', l: 'Battery', u: '%', v: () => gps() ? '—' : String(Math.round(S.batt)), note: () => gps() ? 'needs bike link' : '' },
+    { id: 'solar', l: 'Solar power', u: 'W', v: () => gps() ? '—' : String(Math.round(S.solar)), note: () => gps() ? 'needs bike link' : '' },
+    { id: 'pin', l: 'Power in (solar)', u: 'W', v: () => gps() ? '—' : String(Math.round(S.solar)), note: () => gps() ? 'needs bike link' : 'charging the battery' },
+    { id: 'pout', l: 'Power out (motor)', u: 'W', v: () => gps() ? '—' : String(Math.round(S.motor/0.85)), note: () => gps() ? 'needs bike link' : 'taken from the battery' },
+    { id: 'pbal', l: 'Power balance', u: 'W', v: () => { if(gps()) return '—'; const b = Math.round(S.solar - S.motor/0.85); return (b > 0 ? '+' : '') + b; }, note: () => gps() ? 'needs bike link' : (S.solar - S.motor/0.85 >= 0 ? 'battery charging' : 'battery discharging') },
+    { id: 'ein', l: 'Energy in today', u: 'kWh', v: () => gps() ? '—' : (S.eIn.reduce((a, b) => a + b, 0)/1000).toFixed(2), note: () => gps() ? 'needs bike link' : '' },
+    { id: 'eout', l: 'Energy out today', u: 'kWh', v: () => gps() ? '—' : (S.eOut.reduce((a, b) => a + b, 0)/1000).toFixed(2), note: () => gps() ? 'needs bike link' : '' },
+    { id: 'motor', l: 'Motor power', u: 'W', v: () => String(gps() ? S.motorSet : S.motor), note: () => gps() ? 'setting (bike not linked)' : '' },
+    { id: 'sug', l: 'Suggested motor', u: 'W', v: () => gps() ? (sugW == null ? '—' : String(sugW)) : '—', note: () => gps() ? 'to hold ' + $('gTarget').value + ' km/h' : 'Real ride only' },
+    { id: 'clock', l: 'Clock', u: '', v: () => { if(gps()){ const d = new Date(); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); } return hm(S.t/3600); } },
+    { id: 'gps', l: 'GPS accuracy', u: 'm', v: () => GP.fix ? '±' + Math.round(GP.fix.acc) : '—' },
+    { id: 'wx', l: 'Weather', u: '', v: () => gps() ? '—' : WX[wxAt()].n, note: () => gps() ? 'simulation only' : '' },
+    { id: 'sun', l: 'Sunset', u: '', v: () => hm(SS()) }
+  ];
+  let DASH = [ { id: 'speed', big: 1 }, { id: 'turn', big: 1 }, { id: 'dist' }, { id: 'time' }, { id: 'avg' }, { id: 'togo' }, { id: 'slope' }, { id: 'batt' }, { id: 'solar' }, { id: 'clock' } ];
+  try{ const d = JSON.parse(localStorage.getItem('sunTripDash') || 'null'); if(Array.isArray(d) && d.length) DASH = d.filter(x => DT.some(t => t.id === x.id)); }catch(e){}
+  const saveDash = () => { try{ localStorage.setItem('sunTripDash', JSON.stringify(DASH)); }catch(e){} };
+  const val = f => typeof f === 'function' ? f() : (f || '');
+  function renderDash(){
+    $('dashMode').textContent = gps() ? 'Real ride · live data' : 'Simulation · example data';
+    $('dashGrid').innerHTML = DASH.map(x => { const t = DT.find(d => d.id === x.id); if(!t) return ''; const note = t.note ? val(t.note) : ''; const col = (x.id === 'pin' || x.id === 'ein') ? 'var(--in)' : (x.id === 'pout' || x.id === 'eout') ? 'var(--out)' : x.id === 'pbal' ? (String(val(t.v)).startsWith('-') ? 'var(--out)' : String(val(t.v)).startsWith('+') ? 'var(--in)' : '') : ''; return '<section class="dtile' + (x.big ? ' big' : '') + '"><span class="dl">' + t.l + '</span><span class="dv num"' + (col ? ' style="color:' + col + '"' : '') + '>' + val(t.v) + '</span><span class="du">' + (val(t.u) || '') + (note ? (val(t.u) ? ' · ' : '') + note : '') + '</span></section>'; }).join('') || '<div class="small">Nothing selected. Tap Customize.</div>';
+  }
+  function renderPick(){
+    const order = DASH.map(x => x.id).concat(DT.map(t => t.id).filter(id => !DASH.some(x => x.id === id)));
+    $('dashList').innerHTML = order.map(id => { const t = DT.find(d => d.id === id), on = DASH.find(x => x.id === id); return '<div class="pickrow"><input type="checkbox" data-pk="' + id + '" ' + (on ? 'checked' : '') + ' aria-label="Show ' + t.l + '"><span style="flex:1">' + t.l + '</span>'
+      + (on ? '<label class="small" style="display:flex;align-items:center;gap:4px"><input type="checkbox" data-big="' + id + '" ' + (on.big ? 'checked' : '') + '> Large</label><button type="button" class="pw" data-up="' + id + '" aria-label="Move ' + t.l + ' up" style="width:36px;height:36px">↑</button><button type="button" class="pw" data-dn="' + id + '" aria-label="Move ' + t.l + ' down" style="width:36px;height:36px">↓</button>' : '') + '</div>'; }).join('');
+  }
+  $('dashList').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    const id = b.dataset.up || b.dataset.dn, i = DASH.findIndex(x => x.id === id), j = b.dataset.up ? i - 1 : i + 1;
+    if(i < 0 || j < 0 || j >= DASH.length) return; [DASH[i], DASH[j]] = [DASH[j], DASH[i]]; saveDash(); renderPick(); renderDash();
+  });
+  $('dashList').addEventListener('change', e => {
+    const c = e.target; if(c.dataset.pk){ if(c.checked) DASH.push({ id: c.dataset.pk }); else DASH = DASH.filter(x => x.id !== c.dataset.pk); }
+    if(c.dataset.big){ const x = DASH.find(y => y.id === c.dataset.big); if(x) x.big = c.checked ? 1 : 0; }
+    saveDash(); renderPick(); renderDash();
+  });
+  $('dashEdit').addEventListener('click', () => { const open = $('dashPick').style.display !== 'flex'; $('dashPick').style.display = open ? 'flex' : 'none'; if(open) renderPick(); });
+  $('dashDone').addEventListener('click', () => { $('dashPick').style.display = 'none'; });
+  setInterval(() => { if($('v-dash').classList.contains('on')) renderDash(); }, 500);
+
+  // ---------- horn: 5 sounds made by the app itself (no recordings) ----------
+  let ACX = null;
+  function actx(){ if(!ACX) ACX = new (window.AudioContext || window.webkitAudioContext)(); if(ACX.state === 'suspended') ACX.resume(); return ACX; }
+  function chain(ctx, gainVal){ const comp = ctx.createDynamicsCompressor(); comp.connect(ctx.destination); const g = ctx.createGain(); g.gain.value = gainVal; g.connect(comp); return g; }
+  function osc(ctx, type, f, out, t0, t1, env){ const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.setValueAtTime(f, t0); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(env || 0.5, t0 + 0.02); g.gain.setValueAtTime(env || 0.5, Math.max(t0 + 0.03, t1 - 0.06)); g.gain.exponentialRampToValueAtTime(0.0001, t1); o.connect(g); g.connect(out); o.start(t0); o.stop(t1 + 0.05); return o; }
+  const HORNS = {
+    bell: { n: 'Bike bell', d: 1.4, play(ctx, out, t){ [0, 0.2].forEach(dt => [[2400, .5], [3720, .25], [6600, .12]].forEach(([f, a]) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t + dt); g.gain.exponentialRampToValueAtTime(a, t + dt + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 1.1); o.connect(g); g.connect(out); o.start(t + dt); o.stop(t + dt + 1.2); })); } },
+    car: { n: 'Car', d: 1.1, play(ctx, out, t){ const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2200; f.connect(out); [0, 0.55].forEach(dt => [415, 500].forEach(fr => osc(ctx, 'square', fr, f, t + dt, t + dt + 0.4, 0.3))); } },
+    truck: { n: 'Truck', d: 2.0, play(ctx, out, t){ const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1400; f.connect(out); [0, 1.0].forEach(dt => [138, 174, 220].forEach(fr => { const o = osc(ctx, 'sawtooth', fr*0.92, f, t + dt, t + dt + 0.8, 0.28); o.frequency.exponentialRampToValueAtTime(fr, t + dt + 0.12); })); } },
+    trumpet: { n: 'Trumpet', d: 2.9, play(ctx, out, t){ // traditional "La Cucaracha" style call
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 3200; f.Q.value = 1.5; f.connect(out);
+      const C5 = 523.25, F5 = 698.46, A5 = 880;
+      const seq = [[C5, .13], [C5, .13], [C5, .13], [F5, .32], [A5, .42], [0, .06], [C5, .13], [C5, .13], [C5, .13], [F5, .32], [A5, .62]];
+      let at = t;
+      seq.forEach(([fr, d]) => { if(fr){ const o = osc(ctx, 'sawtooth', fr, f, at, at + d - 0.02, 0.32); const o2 = osc(ctx, 'square', fr, f, at, at + d - 0.02, 0.08); const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 5.5; lg.gain.value = fr*0.006; lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency); lfo.start(at); lfo.stop(at + d); } at += d; });
+    } },
+    police: { n: 'Police', d: 3.2, play(ctx, out, t){ const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 3000; f.connect(out); const o = osc(ctx, 'sawtooth', 650, f, t, t + 3.1, 0.25); const o2 = osc(ctx, 'sine', 650, out, t, t + 3.1, 0.25); for(let k = 0; k < 2; k++){ const a = t + k*1.55; [o, o2].forEach(x => { x.frequency.setValueAtTime(650, a); x.frequency.linearRampToValueAtTime(1350, a + 0.75); x.frequency.linearRampToValueAtTime(650, a + 1.5); }); } } }
+  };
+  const HICON = {
+    bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    car: '<path d="M5 16l1.5-5h11L19 16"/><rect x="3" y="16" width="18" height="3" rx="1"/><circle cx="7.5" cy="19.5" r="1.5"/><circle cx="16.5" cy="19.5" r="1.5"/>',
+    truck: '<rect x="2" y="7" width="12" height="9"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+    trumpet: '<path d="M3 12h11l6-5v10l-6-5"/><path d="M6 12v3M9 12v3"/>',
+    police: '<path d="M7 18v-6a5 5 0 0 1 10 0v6"/><path d="M4 18h16v3H4z"/><path d="M12 3v2M5 6l1.5 1.5M19 6l-1.5 1.5"/>'
+  };
+  let hornId = 'bell', hornBusy = 0;
+  try{ hornId = localStorage.getItem('sunTripHorn') || 'bell'; if(!HORNS[hornId]) hornId = 'bell'; $('hornFloat').checked = localStorage.getItem('sunTripHornFab') !== '0'; }catch(e){}
+  function playHorn(id){
+    const h = HORNS[id || hornId]; if(!h) return;
+    const now = Date.now(); if(now < hornBusy) return; hornBusy = now + h.d*1000*0.6;
+    try{ const ctx = actx(), out = chain(ctx, 0.9); aud.volume = 0.2; h.play(ctx, out, ctx.currentTime + 0.02); setTimeout(() => { aud.volume = 1; }, h.d*1000 + 200); }catch(e){}
+  }
+  function renderHornSel(){
+    $('hornSel').innerHTML = Object.keys(HORNS).map(k => '<button type="button" data-h="' + k + '" aria-pressed="' + (k === hornId) + '"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + HICON[k] + '</svg>' + HORNS[k].n + '</button>').join('');
+    $('hornName').textContent = HORNS[hornId].n;
+  }
+  $('hornSel').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; hornId = b.dataset.h; try{ localStorage.setItem('sunTripHorn', hornId); }catch(_){} renderHornSel(); playHorn(hornId); });
+  $('hornPlay').addEventListener('click', () => playHorn());
+  $('hornFab').addEventListener('click', () => playHorn());
+  $('hornFloat').addEventListener('change', () => { try{ localStorage.setItem('sunTripHornFab', $('hornFloat').checked ? '1' : '0'); }catch(_){} syncFab(); });
+  function syncFab(){ const v = document.querySelector('.view.on'); $('hornFab').classList.toggle('show', $('hornFloat').checked && v && (v.id === 'v-ride' || v.id === 'v-dash')); }
+  document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => setTimeout(() => { syncFab(); if(b.dataset.v === 'dash') renderDash(); }, 0)));
+  renderHornSel(); syncFab();
+
+  // ---------- photos: take a picture, saved with its position, shown on the maps ----------
+  let PDB = null;
+  function pdb(){ return PDB || (PDB = new Promise((res, rej) => { try{ const r = indexedDB.open('sunTrip', 1); r.onupgradeneeded = () => { const st = r.result.createObjectStore('photos', { keyPath: 'id' }); st.createIndex('day', 'day'); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }catch(e){ rej(e); } })); }
+  async function pPut(o){ const db = await pdb(); return new Promise((res, rej) => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put(o); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); }
+  async function pGet(id){ const db = await pdb(); return new Promise(res => { const r = db.transaction('photos').objectStore('photos').get(id); r.onsuccess = () => res(r.result); r.onerror = () => res(null); }); }
+  async function pDel(id){ const db = await pdb(); return new Promise(res => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').delete(id); tx.oncomplete = res; }); }
+  async function pDay(day){ try{ const db = await pdb(); return await new Promise(res => { const out = []; const r = db.transaction('photos').objectStore('photos').index('day').openCursor(IDBKeyRange.only(day)); r.onsuccess = () => { const c = r.result; if(c){ const v = c.value; out.push({ id: v.id, lat: v.lat, lon: v.lon, t: v.t, thumb: v.thumb }); c.continue(); } else res(out); }; r.onerror = () => res(out); }); }catch(e){ return []; } }
+  function shrink(file, max){ return new Promise((res, rej) => { const url = URL.createObjectURL(file), im = new Image(); im.onload = () => { const k = Math.min(1, max/Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width*k); c.height = Math.round(im.height*k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', max > 400 ? 0.8 : 0.7)); }; im.onerror = rej; im.src = url; }); }
+  const photoDay = () => gps() ? todayKey() : 'sim-' + S.day;
+  function photoPos(){ if(gps()) return GP.fix ? GP.fix.p : null; return llAt(S.km); }
+  $('camFab').addEventListener('click', () => { if(!photoPos()){ say('Waiting for GPS before taking a photo'); $('gStatus') && ($('gStatus').textContent = 'Photo: waiting for a GPS position'); return; } $('photoIn').click(); });
+  $('photoIn').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+    const pos = photoPos(); if(!pos) return;
+    try{
+      const [full, thumb] = await Promise.all([shrink(f, 1600), shrink(f, 160)]);
+      const ph = { id: 'p' + Date.now(), day: photoDay(), t: Date.now(), lat: pos[0], lon: pos[1], km: gps() ? (GP.rec ? GP.rec.km : 0) : S.km, full, thumb };
+      await pPut(ph); say('Photo saved on the map'); refreshPhotos();
+    }catch(err){ say('Could not save the photo'); }
+  });
+  async function openPhoto(id){
+    const ph = await pGet(id); if(!ph) return;
+    $('pvImg').src = ph.full; const d = new Date(ph.t);
+    $('pvCap').textContent = (ph.day.startsWith('sim-') ? 'Simulation day ' + ph.day.slice(4) : dateLabel(ph.day)) + ' · ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ' · ' + ph.lat.toFixed(5) + ', ' + ph.lon.toFixed(5);
+    $('photoView').dataset.id = id; $('photoView').style.display = 'flex';
+  }
+  $('pvClose').addEventListener('click', () => { $('photoView').style.display = 'none'; $('pvImg').src = ''; });
+  $('pvDel').addEventListener('click', async () => { await pDel($('photoView').dataset.id); $('photoView').style.display = 'none'; refreshPhotos(); });
+  // which photos each map shows
+  let histPhotoDay = null;
+  async function refreshPhotos(){
+    liveMap.setPhotos(gps() ? await pDay(todayKey()) : []);
+    routeMap.setPhotos(gps() ? await pDay(todayKey()) : []);
+    if(histPhotoDay) histMap.setPhotos(await pDay(histPhotoDay)); else histMap.setPhotos([]);
+  }
+  const _showMap = showMap;
+  showMap = function(segs, ghost){ _showMap(segs, ghost); const list = histList(), live = hIdx < 0; let day = null; if(MODE === 'gps'){ day = live ? todayKey() : (list[hIdx] && list[hIdx].date); } else { day = 'sim-' + (live ? S.day : (list[hIdx] && list[hIdx].d)); } histPhotoDay = day; refreshPhotos(); };
+  function syncCam(){ const v = document.querySelector('.view.on'); $('camFab').classList.toggle('show', !!v && (v.id === 'v-ride' || v.id === 'v-dash' || v.id === 'v-route')); }
+  document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => setTimeout(() => { syncCam(); syncFab(); }, 0)));
+  document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => setTimeout(refreshPhotos, 100)));
+  syncCam(); refreshPhotos();
 })();
 </script>
 </body>
