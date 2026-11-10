@@ -39,7 +39,11 @@ public class MainActivity extends Activity {
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (pending != null) pending.onReceiveValue(null);
                 pending = callback;
-                Intent i = params.createIntent();
+                                  Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                   i.addCategory(Intent.CATEGORY_OPENABLE);
+                   String[] types = params.getAcceptTypes();
+                   boolean audio = types != null && types.length > 0 && types[0].startsWith("audio");
+                   i.setType(audio ? "audio/*" : "*/*");
                 i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
                 try { startActivityForResult(i, PICK_FILE); }
                 catch (Exception e) { pending = null; return false; }
