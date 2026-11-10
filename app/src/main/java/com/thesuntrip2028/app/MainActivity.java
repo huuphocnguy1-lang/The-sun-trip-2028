@@ -123,6 +123,17 @@ public class MainActivity extends Activity {
         }
     }
 
+    /**
+     * Link to the bike's motor controller. Placeholder until the controller model is known:
+     * it keeps the power the rider chose, and reports "not linked". The Bluetooth code that
+     * sends this value to the controller goes in setPower().
+     */
+    public class Bike {
+        private volatile int wanted = 200;
+        @JavascriptInterface public void setPower(int watts) { wanted = Math.max(0, Math.min(350, watts)); }
+        @JavascriptInterface public String status() { return "{\"linked\":false,\"set\":" + wanted + "}"; }
+    }
+
     /** Walkie-talkie between phones on the same Wi-Fi / hotspot. */
     public class Talk {
         @JavascriptInterface
@@ -232,6 +243,7 @@ public class MainActivity extends Activity {
         web.addJavascriptInterface(new Gps(), "AndroidGps");
         web.addJavascriptInterface(new Media(), "AndroidMedia");
         web.addJavascriptInterface(new Talk(), "AndroidTalk");
+        web.addJavascriptInterface(new Bike(), "AndroidBike");
         setContentView(web);
         web.loadUrl("https://appassets.androidplatform.net/assets/index.html");
 

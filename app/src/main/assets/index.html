@@ -116,6 +116,8 @@
   .screen.gps .gpsonly{display:flex!important}
   .screen.gps .gpsgrid{display:grid!important}
   .navb.off{background:#7A1F1F!important;color:#fff!important}
+  .mz{width:40px;height:40px;border-radius:12px;border:0;background:rgba(22,24,29,.85);color:#fff;font:700 20px Inter,sans-serif;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+  .chips button[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
 </style>
 </head>
 <body>
@@ -199,7 +201,7 @@
       <b id="gpxDlgTitle" style="font-size:20px">Ride this route?</b>
       <div class="small num" id="gpxDlgInfo">—</div>
       <div id="gpxMap" style="position:relative;height:240px;border-radius:14px;overflow:hidden;background:#1d2128;touch-action:none"></div>
-      <div class="row small"><span id="gpxMapAttr"></span><span style="display:flex;gap:6px"><button type="button" class="pw" id="gpxOut" aria-label="Zoom out">−</button><button type="button" class="pw" id="gpxIn2" aria-label="Zoom in">+</button></span></div>
+      <div class="small" id="gpxMapAttr"></div>
       <div class="ridebar">
         <button type="button" class="rb pause" id="gpxNo">No</button>
         <button type="button" class="rb go" id="gpxYes" style="flex:1.6">Yes, ride it</button>
@@ -233,6 +235,7 @@
         <div class="g num" id="gNavDist" style="font-size:26px;line-height:1.1">—</div>
         <div id="gNavTxt" style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
         <div id="gNavThen" style="font-size:12px;opacity:.85">—</div>
+        <label for="gpxIn" id="gNavLoad" style="display:none;margin-top:8px;height:40px;align-items:center;justify-content:center;border-radius:12px;background:#fff;color:#16181D;font:700 14px Inter,sans-serif;cursor:pointer">Load GPX from phone</label>
       </div>
       <button type="button" class="vb" id="gVoiceBtn" aria-label="Voice guidance"><svg id="gVoiceIco" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg></button>
     </section>
@@ -240,7 +243,7 @@
       <div class="small num" id="gNavProg"></div>
       <div class="bar" style="height:8px"><i id="gNavBar" style="width:0%"></i></div>
       <div id="lMap" style="position:relative;height:220px;border-radius:14px;overflow:hidden;background:#1d2128;touch-action:none;cursor:grab"></div>
-      <div class="row small"><span id="lMapAttr"></span><span style="display:flex;gap:6px"><button type="button" class="pw" id="lCenter" aria-label="Centre on my position">◎</button><button type="button" class="pw" id="lOut" aria-label="Zoom out">−</button><button type="button" class="pw" id="lIn" aria-label="Zoom in">+</button></span></div>
+      <div class="small" id="lMapAttr"></div>
     </section>
     <section class="card dark gpsonly" style="flex-direction:column;padding:16px 18px;gap:8px">
       <div class="row"><span style="font-size:13px;color:#B9BDC8">Speed · GPS</span><span class="num" id="gStatus" style="font-size:13px;color:#B9BDC8">GPS off</span></div>
@@ -248,6 +251,26 @@
       <span class="num" id="gClock" style="font-size:13px;color:#B9BDC8">—</span>
     </section>
     <div class="grid2 gpsgrid" style="display:none" id="gTiles"></div>
+    <section class="card gpsonly" style="flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1;display:flex;flex-direction:column"><span class="lbl">Motor power</span><span class="small" id="gMotorSt">Bike not linked</span></div>
+        <button type="button" class="pw" id="gmDown" aria-label="Less motor power">−</button>
+        <span class="g num" id="gMotorW" style="font-size:22px;min-width:74px;text-align:center">200 W</span>
+        <button type="button" class="pw" id="gmUp" aria-label="More motor power">+</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;background:var(--ground);border:1px solid var(--line);border-radius:12px;padding:8px 10px">
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px"><span class="small">Suggested</span><span class="g num" id="gSugW" style="font-size:20px;color:var(--blue)">—</span><span class="small" id="gSugWhy">—</span></div>
+        <button type="button" class="rb go" id="gSugUse" style="flex:0 0 76px;height:44px;font-size:15px">Use</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px" class="small">
+        <label for="gTarget">Target speed</label>
+        <select id="gTarget" style="height:36px;border-radius:10px;border:1px solid var(--line);background:var(--ground);color:var(--ink);font:600 14px Inter,sans-serif;padding:0 8px"><option>15</option><option>16</option><option selected>18</option><option>20</option><option>22</option><option>25</option><option>28</option><option>30</option><option>32</option><option>35</option><option>40</option><option>45</option><option>50</option></select><span>km/h</span>
+        <label style="margin-left:auto;display:flex;align-items:center;gap:6px"><input type="checkbox" id="gAuto"> Auto-apply</label>
+      </div>
+      <div class="chips" style="display:flex;gap:6px" role="group" aria-label="Motor presets">
+        <button type="button" data-mw="0" style="flex:1">Off</button><button type="button" data-mw="100" style="flex:1">Eco 100</button><button type="button" data-mw="200" style="flex:1">Tour 200</button><button type="button" data-mw="350" style="flex:1">Max 350</button>
+      </div>
+    </section>
     <section class="card gpsonly" style="flex-direction:column;gap:4px">
       <div class="row"><span class="lbl">GPS detection</span><span class="small num" id="gSig"></span></div>
       <div id="gBars" style="display:flex;gap:3px;align-items:flex-end;height:28px" aria-hidden="true"></div>
@@ -315,7 +338,14 @@
 
   <!-- ROUTE -->
   <div class="view" id="v-route">
-    <section class="card mapcard" style="background:#E9EEF2;border-color:#DCE2E7;padding:0;overflow:hidden">
+    <section class="card gpsonly" style="flex-direction:column;gap:8px;display:none">
+      <div class="row"><span class="lbl">Your route</span><span class="small" id="rRouteSt"></span></div>
+      <div class="small num" id="rRouteInfo">No route loaded. Tap Load GPX on the Ride screen or in Trip.</div>
+      <div class="bar" style="height:8px"><i id="rRouteBar" style="width:0%"></i></div>
+      <div id="rMap" style="position:relative;height:300px;border-radius:14px;overflow:hidden;background:#1d2128;touch-action:none;cursor:grab"></div>
+      <div class="small" id="rMapAttr"></div>
+    </section>
+    <section class="card simonly mapcard" style="background:#E9EEF2;border-color:#DCE2E7;padding:0;overflow:hidden">
       <svg width="100%" height="210" viewBox="0 0 358 210" role="img" aria-label="Route map Lyon to Guangzhou">
         <path id="rBase" d="M18 60 L62 54 L106 56 L146 46 L180 80 L214 100 L252 82 L270 80 L292 88 L306 110 L326 150 L340 192" fill="none" stroke="#9DB6E6" stroke-width="4" stroke-dasharray="2 7" stroke-linecap="round" stroke-linejoin="round"/>
         <path id="rDone" d="M18 60 L62 54 L106 56 L146 46 L180 80 L214 100 L252 82 L270 80 L292 88 L306 110 L326 150 L340 192" fill="none" stroke="#1F5FD1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -326,28 +356,39 @@
         <text x="282" y="200" font-size="11" font-weight="600" fill="#16181D">Guangzhou</text>
       </svg>
     </section>
-    <section class="card">
+    <section class="card simonly">
       <div class="row"><span class="g num" id="doneKm" style="font-size:22px">—</span><span class="small num" id="leftKm">—</span></div>
       <div class="bar" style="height:10px"><i id="tripBar"></i></div>
       <span class="small num" id="tripNote">—</span>
     </section>
-    <section class="card">
+    <section class="card simonly">
       <span class="lbl">Surfaces ahead</span>
       <div class="strip" id="routeStrip"></div>
       <div id="legend" style="display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:#3E4350"></div>
     </section>
-    <section class="card list" id="stops" style="padding:4px 15px"></section>
+    <section class="card simonly list" id="stops" style="padding:4px 15px"></section>
   </div>
 
   <!-- ENERGY -->
   <div class="view" id="v-energy">
-    <section class="card">
+    <section class="card gpsonly" style="flex-direction:column;gap:10px;display:none">
+      <div class="row"><span class="lbl">E-bike</span><span class="small" id="eBikeSt" style="color:var(--warn);font-weight:700">Not connected</span></div>
+      <div style="font-size:15px;font-weight:600">No data from the bike yet</div>
+      <div class="small" style="line-height:1.5">Battery, power from panels 1–5, roof tilt, extra panel and motor power appear here once the phone is linked to the bike's controller by Bluetooth. Nothing on this screen is estimated in Real ride.</div>
+      <div class="list" style="display:flex;flex-direction:column">
+        <div class="small"><span style="flex:1">Battery</span><b>—</b></div>
+        <div class="small"><span style="flex:1">Solar power (panels 1–5)</span><b>—</b></div>
+        <div class="small"><span style="flex:1">Roof tilt</span><b>—</b></div>
+        <div class="small"><span style="flex:1">Motor power</span><b id="eMotorWant">— (setting 200 W)</b></div>
+      </div>
+    </section>
+    <section class="card simonly">
       <div class="row"><span class="lbl">Today</span><span class="small num">In <b style="color:var(--in)" id="eIn">0</b> · Out <b style="color:var(--out)" id="eOut">0</b></span></div>
       <div id="eChart" style="display:flex;align-items:flex-end;gap:4px;height:96px"></div>
       <div class="row small" style="font-size:11px"><span>06:00</span><span>13:00</span><span>20:00</span></div>
       <div style="display:flex;gap:14px;font-size:12px;color:#3E4350"><span><span class="sw" style="background:var(--in)"></span> In (solar)</span><span><span class="sw" style="background:var(--out)"></span> Out (motor)</span></div>
     </section>
-    <section class="card dark" style="padding:15px 17px;gap:12px">
+    <section class="card simonly dark" style="padding:15px 17px;gap:12px">
       <div class="row"><span class="lbl" style="color:#B9BDC8">Roof panel tilt</span><span style="font-size:12px;color:#B9BDC8">−30° … +30°</span></div>
       <div style="display:flex;align-items:center;gap:16px">
         <svg width="72" height="52" viewBox="0 0 72 52" fill="none" aria-hidden="true"><path d="M36 30v18M20 48h32" stroke="#5B6070" stroke-width="2" stroke-linecap="round"/><line id="panelLine" x1="12" y1="30" x2="60" y2="30" stroke="#F2B544" stroke-width="5" stroke-linecap="round"/><circle id="sunDot" cx="36" cy="7" r="5" stroke="#F2B544" stroke-width="2"/></svg>
@@ -359,11 +400,11 @@
         <button type="button" id="tUp" aria-label="Tilt up">+</button>
       </div>
     </section>
-    <section class="card">
+    <section class="card simonly">
       <div class="row"><span class="lbl">Power from each panel</span><span class="small num">Total <b style="color:var(--in)" id="pTot">0 W</b></span></div>
       <div id="pGrid" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px"></div>
     </section>
-    <section class="card list" style="padding:4px 15px">
+    <section class="card simonly list" style="padding:4px 15px">
       <div><span style="flex:1;display:flex;flex-direction:column"><b>Panel 5 (extra)</b><span class="small num" id="exTxt">Off</span></span>
         <button type="button" role="switch" aria-checked="false" id="exBtn" aria-label="Extra panel" style="width:56px;height:32px;border-radius:16px;border:0;background:var(--line);position:relative;cursor:pointer"><span id="exKnob" style="position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:13px;background:#fff;transition:left .2s"></span></button></div>
       <div><span style="flex:1;font-weight:600">Battery</span><span class="g num" id="eBatt">—</span></div>
@@ -374,7 +415,7 @@
 
   <!-- TRIP -->
   <div class="view" id="v-trip">
-    <div class="grid2">
+    <div class="grid2 simonly">
       <section class="card dark"><span style="font-size:12px;color:#B9BDC8">Arrival estimate</span><span class="g num" style="font-size:28px" id="tDays">—</span></section>
       <section class="card"><span class="small">Distance</span><span class="g num" style="font-size:28px">14 300 km</span></section>
       <section class="card"><span class="small">Today so far</span><span class="g num" style="font-size:24px" id="tToday">0 km</span></section>
@@ -402,7 +443,7 @@
       <div id="hMapBox" style="display:none;flex-direction:column;gap:6px">
         <div class="lbl">Map</div>
         <div id="hMap" style="position:relative;height:260px;border-radius:14px;overflow:hidden;background:#1d2128;touch-action:none;cursor:grab"></div>
-        <div class="row small"><span id="hMapAttr"></span><span style="display:flex;gap:6px"><button type="button" class="pw" id="mapOut" aria-label="Zoom out">−</button><button type="button" class="pw" id="mapIn" aria-label="Zoom in">+</button></span></div>
+        <div class="small" id="hMapAttr"></div>
       </div>
     </section>
     <div class="grid2">
@@ -768,8 +809,46 @@
       if(dm < 60 && lastSaid !== key50){ lastSaid = key50; say(a.turn.t + a.road); }
     }
   }
-  $('mUp').addEventListener('click', () => { S.motorSet = Math.min(350, S.motorSet + 25); });
-  $('mDown').addEventListener('click', () => { S.motorSet = Math.max(0, S.motorSet - 25); });
+  $('mUp').addEventListener('click', () => { S.motorSet = Math.min(350, S.motorSet + 25); sendMotor(); });
+  // motor power in Real ride: sent to the bike once the Bluetooth link exists
+  function bikeState(){ try{ return window.AndroidBike ? JSON.parse(AndroidBike.status()) : null; }catch(e){ return null; } }
+  function sendMotor(){ try{ if(window.AndroidBike) AndroidBike.setPower(S.motorSet); }catch(e){} try{ localStorage.setItem('sunTripMotor', String(S.motorSet)); }catch(e){} }
+  // suggested motor power: what is needed to hold the target speed on the slope ahead
+  let sugW = null, lastAuto = 0;
+  function suggestMotor(){
+    const v = Number($('gTarget').value)/3.6;
+    let g = null, src = '';
+    if(GPX && GPX.la && GPX.nav && NAV.matched && !NAV.off){ g = (gpxElev(Math.min(GPX.total, NAV.km + 0.3)) - gpxElev(NAV.km))/300; src = 'route, next 300 m'; }
+    else if(GP.slope != null){ g = GP.slope/100; src = 'GPS altitude'; }
+    if(g == null) return null;
+    g = Math.max(-0.15, Math.min(0.15, g));
+    const th = Math.atan(g), need = (MASS*9.81*(CRR*Math.cos(th) + Math.sin(th))*v + 0.5*RHO*CDA*v*v*v)/0.95;
+    const raw = Math.round((need - RIDER)/25)*25, w = Math.max(0, Math.min(350, raw));
+    const maxV = solveSpeed(0.95*(RIDER + 350), g, 0)*3.6;
+    return { w, g, src, over: raw > 350, maxV };
+  }
+  function renderMotorGps(){
+    const sg = suggestMotor();
+    if(sg){ sugW = sg.w; $('gSugW').textContent = sg.w + ' W'; $('gSugWhy').textContent = (sg.over ? 'Target too fast for the motor here: at 350 W + you, expect about ' + sg.maxV.toFixed(0) + ' km/h · ' : '') + (sg.g > 0.005 ? 'climb ' : sg.g < -0.005 ? 'descent ' : 'flat ') + (sg.g*100 > 0 ? '+' : '') + (sg.g*100).toFixed(1) + ' % (' + sg.src + ') · to hold ' + $('gTarget').value + ' km/h with you at 120 W'; }
+    else { sugW = null; $('gSugW').textContent = '—'; $('gSugWhy').textContent = 'Needs a GPS fix with altitude, or a loaded route'; }
+    $('gSugUse').disabled = sugW == null || sugW === S.motorSet;
+    if($('gAuto').checked && sugW != null && sugW !== S.motorSet && Date.now() - lastAuto > 20000 && S.started && !S.paused){ lastAuto = Date.now(); S.motorSet = sugW; sendMotor(); say('Motor ' + sugW + ' watts'); }
+    $('gMotorW').textContent = S.motorSet + ' W';
+    $('gmDown').disabled = S.motorSet <= 0; $('gmUp').disabled = S.motorSet >= 350;
+    document.querySelectorAll('[data-mw]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.mw) === S.motorSet)));
+    const st = bikeState();
+    $('gMotorSt').textContent = st && st.linked ? 'Sent to bike · motor now ' + (st.power != null ? st.power + ' W' : '—') : 'Bike not linked yet · ' + S.motorSet + ' W will be sent when the Bluetooth link is added';
+  }
+  $('gmUp').addEventListener('click', () => { S.motorSet = Math.min(350, S.motorSet + 25); sendMotor(); renderMotorGps(); });
+  $('gmDown').addEventListener('click', () => { S.motorSet = Math.max(0, S.motorSet - 25); sendMotor(); renderMotorGps(); });
+  document.querySelectorAll('[data-mw]').forEach(b => b.addEventListener('click', () => { S.motorSet = Number(b.dataset.mw); sendMotor(); renderMotorGps(); say(S.motorSet ? 'Motor ' + S.motorSet + ' watts' : 'Motor off'); }));
+  try{ const m = Number(localStorage.getItem('sunTripMotor')); if(localStorage.getItem('sunTripMotor') != null && m >= 0 && m <= 350) S.motorSet = m; }catch(e){}
+  setInterval(() => { if(MODE === 'gps') renderMotorGps(); }, 1000);
+  $('gSugUse').addEventListener('click', () => { if(sugW == null) return; S.motorSet = sugW; sendMotor(); renderMotorGps(); say('Motor ' + sugW + ' watts'); });
+  try{ const t = localStorage.getItem('sunTripTarget'); if(t) $('gTarget').value = t; $('gAuto').checked = localStorage.getItem('sunTripAuto') === '1'; }catch(e){}
+  $('gTarget').addEventListener('change', () => { try{ localStorage.setItem('sunTripTarget', $('gTarget').value); }catch(e){} renderMotorGps(); });
+  $('gAuto').addEventListener('change', () => { try{ localStorage.setItem('sunTripAuto', $('gAuto').checked ? '1' : '0'); }catch(e){} });
+  $('mDown').addEventListener('click', () => { S.motorSet = Math.max(0, S.motorSet - 25); sendMotor(); });
 
   // ---------- GPX loading ----------
   let GPX = null; // {name, km:[], ele:[], total}
@@ -853,7 +932,7 @@
     const active = S.started && !S.paused, now = Date.now();
     if(NAV.dist > 50){ if(!NAV.offSince) NAV.offSince = now; if(!NAV.off && now - NAV.offSince > 8000){ NAV.off = true; } }
     else if(NAV.dist < 30){ if(NAV.off && active) say('Back on route'); NAV.off = false; NAV.offSince = 0; }
-    if(NAV.off && active && now - NAV.lastOffSay > 60000){ NAV.lastOffSay = now; const dir = COMPASS[Math.round(brg(p, NAV.toRoute)/45) % 8]; say('You are off route. The route is ' + Math.round(NAV.dist/10)*10 + ' metres to the ' + dir); }
+    if(NAV.off && active && now - NAV.lastOffSay > 60000){ NAV.lastOffSay = now; const dir = COMPASS[Math.round(brg(p, NAV.toRoute)/45) % 8]; say(NAV.dist > 20000 ? 'You are ' + Math.round(NAV.dist/1000) + ' kilometres from the start of navigation. Guidance begins when you reach the route.' : 'You are off route. The route is ' + (NAV.dist >= 1000 ? (NAV.dist/1000).toFixed(1) + ' kilometres' : Math.round(NAV.dist/10)*10 + ' metres') + ' to the ' + dir); }
     if(!NAV.ready || NAV.off || !active) return;
     const t = NAV.turns.find(x => x.km > NAV.km + 0.005);
     if(!t) { if(GPX.total - NAV.km < 0.05 && !NAV.said.end){ NAV.said.end = 1; say('You have arrived at the end of the route'); } return; }
@@ -864,7 +943,8 @@
   }
   function renderNavGps(){
     const box = $('gNav');
-    if(!GPX || !GPX.la || !GPX.nav){ box.classList.remove('off'); $('gNavIco').innerHTML = '<path d="M9 4l6 2 6-2v14l-6 2-6-2-6 2V6z"/><path d="M9 4v14M15 6v14"/>'; $('gNavDist').textContent = 'No route'; $('gNavTxt').textContent = 'Load your komoot GPX in Trip › Load GPX'; $('gNavThen').textContent = 'Then the app guides you along it, offline'; $('gNavProg').textContent = ''; return; }
+    if(!GPX || !GPX.la || !GPX.nav){ box.classList.remove('off'); $('gNavIco').innerHTML = '<path d="M9 4l6 2 6-2v14l-6 2-6-2-6 2V6z"/><path d="M9 4v14M15 6v14"/>'; $('gNavDist').textContent = 'No route'; $('gNavTxt').textContent = 'Load your komoot GPX'; $('gNavThen').textContent = 'The app then guides you along it, offline'; $('gNavProg').textContent = ''; $('gNavLoad').style.display = 'flex'; return; }
+    $('gNavLoad').style.display = 'none';
     if(!GP.fix || !NAV.matched){ $('gNavDist').textContent = 'Waiting for GPS'; $('gNavTxt').textContent = GPX.name; $('gNavThen').textContent = fmt(GPX.total) + ' km route'; $('gNavIco').innerHTML = '<circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/>'; return; }
     const left = Math.max(0, GPX.total - NAV.km), avg = GP.rec && GP.rec.sec > 600 ? GP.rec.km/(GP.rec.sec/3600) : 18;
     $('gNavProg').textContent = 'km ' + NAV.km.toFixed(1) + ' of ' + fmt(GPX.total) + ' · ' + (left < 10 ? left.toFixed(1) : fmt(left)) + ' km to go · ≈ ' + hmDur(left/avg*3600) + ' riding';
@@ -873,9 +953,9 @@
       box.classList.add('off');
       const b2 = brg(GP.fix.p, NAV.toRoute), rel = NAV.course == null ? b2 : angDiff(NAV.course, b2);
       $('gNavIco').innerHTML = '<g transform="rotate(' + rel.toFixed(0) + ' 12 12)"><path d="M12 20V5M6 11l6-6 6 6"/></g>';
-      $('gNavDist').textContent = 'Off route · ' + Math.round(NAV.dist) + ' m';
+      $('gNavDist').textContent = (NAV.dist > 20000 ? 'Far from route · ' : 'Off route · ') + (NAV.dist >= 1000 ? fmt(NAV.dist/1000) + ' km' : Math.round(NAV.dist) + ' m');
       $('gNavTxt').textContent = 'Route is to the ' + COMPASS[Math.round(b2/45) % 8] + (NAV.course == null ? '' : ' (arrow points to it)');
-      $('gNavThen').textContent = 'Go back to the route to continue';
+      $('gNavThen').textContent = NAV.dist > 20000 ? 'Turn directions start when you reach the route (nearest point: km ' + fmt(NAV.km) + ')' : 'Go back to the route to continue';
       return;
     }
     box.classList.remove('off');
@@ -1168,7 +1248,10 @@
   function simPath(from, to){ const out = []; const n = Math.max(2, Math.ceil((to - from)/2)); for(let i=0;i<=n;i++) out.push(llAt(from + (to-from)*i/n)); return out; }
   const px = (lat, lon, z) => { const n = 256*Math.pow(2, z), x = (lon + 180)/360*n, s2 = Math.sin(lat*Math.PI/180); return [x, (0.5 - Math.log((1+s2)/(1-s2))/(4*Math.PI))*n]; };
   function createMap(el, attrEl, inBtn, outBtn, centerBtn){
-    el.innerHTML = '<div style="position:absolute;inset:0"></div><div style="position:absolute;inset:0;pointer-events:none"></div>';
+    el.innerHTML = '<div style="position:absolute;inset:0"></div><div style="position:absolute;inset:0;pointer-events:none"></div>'
+      + '<div style="position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px;z-index:2">'
+      + '<button type="button" class="mz" data-z="1" aria-label="Zoom in">+</button><button type="button" class="mz" data-z="-1" aria-label="Zoom out">−</button>'
+      + (centerBtn ? '<button type="button" class="mz" data-z="0" aria-label="Centre on my position">◎</button>' : '') + '</div>';
     const tl = el.children[0], sv = el.children[1], tiles = {};
     const M = { layers: [], z: 12, cx: 0, cy: 0, china: false, marker: null, follow: false, ends: false, note: '', dragT: 0 };
     const cv = p => M.china ? toGcj(p[0], p[1]) : p;
@@ -1221,18 +1304,27 @@
       sv.innerHTML = g + '</svg>';
       if(attrEl) attrEl.textContent = (M.china ? '© AutoNavi (Gaode) map' : '© OpenStreetMap contributors') + (M.note ? ' · ' + M.note : '');
     }
-    let drag = null;
-    el.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY, M.cx, M.cy]; el.setPointerCapture(e.pointerId); el.style.cursor = 'grabbing'; });
-    el.addEventListener('pointermove', e => { if(!drag) return; M.cx = drag[2] - (e.clientX - drag[0]); M.cy = drag[3] - (e.clientY - drag[1]); M.dragT = Date.now(); draw(); });
-    const end = () => { drag = null; el.style.cursor = 'grab'; };
-    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
     const zoom = d => { const nz = Math.max(3, Math.min(18, M.z + d)); if(nz === M.z) return; const f = Math.pow(2, nz - M.z); M.cx *= f; M.cy *= f; M.z = nz; draw(); };
-    if(inBtn) inBtn.addEventListener('click', () => zoom(1));
-    if(outBtn) outBtn.addEventListener('click', () => zoom(-1));
-    if(centerBtn) centerBtn.addEventListener('click', () => { M.dragT = 0; if(M.marker){ const q = px(M.marker[0], M.marker[1], M.z); M.cx = q[0]; M.cy = q[1]; draw(); } });
+    // one finger drags, two fingers pinch to zoom, double-tap zooms in
+    const ptr = new Map(); let drag = null, pinch0 = 0, lastTap = 0;
+    const two = () => { const v = [...ptr.values()]; return Math.hypot(v[0][0]-v[1][0], v[0][1]-v[1][1]); };
+    el.addEventListener('pointerdown', e => {
+      if(e.target.closest('.mz')) return;
+      ptr.set(e.pointerId, [e.clientX, e.clientY]); try{ el.setPointerCapture(e.pointerId); }catch(_){}
+      if(ptr.size === 1){ drag = [e.clientX, e.clientY, M.cx, M.cy]; el.style.cursor = 'grabbing'; const now = Date.now(); if(now - lastTap < 300){ zoom(1); lastTap = 0; } else lastTap = now; }
+      if(ptr.size === 2){ drag = null; pinch0 = two(); }
+    });
+    el.addEventListener('pointermove', e => {
+      if(!ptr.has(e.pointerId)) return; ptr.set(e.pointerId, [e.clientX, e.clientY]);
+      if(ptr.size === 2 && pinch0){ const r = two()/pinch0; if(r > 1.5){ zoom(1); pinch0 = two(); } else if(r < 0.67){ zoom(-1); pinch0 = two(); } M.dragT = Date.now(); return; }
+      if(drag){ M.cx = drag[2] - (e.clientX - drag[0]); M.cy = drag[3] - (e.clientY - drag[1]); M.dragT = Date.now(); draw(); }
+    });
+    const end = e => { ptr.delete(e.pointerId); if(ptr.size < 2) pinch0 = 0; if(ptr.size === 1){ const v = [...ptr.values()][0]; drag = [v[0], v[1], M.cx, M.cy]; } if(ptr.size === 0){ drag = null; el.style.cursor = 'grab'; } };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    el.querySelectorAll('.mz').forEach(b => b.addEventListener('click', ev => { ev.stopPropagation(); const d = Number(b.dataset.z); if(d) zoom(d); else { M.dragT = 0; if(M.marker){ const q = px(M.marker[0], M.marker[1], M.z); M.cx = q[0]; M.cy = q[1]; draw(); } } }));
     return { set, setMarker, draw, M };
   }
-  const histMap = createMap($('hMap'), $('hMapAttr'), $('mapIn'), $('mapOut'));
+  const histMap = createMap($('hMap'), $('hMapAttr'));
   function showMap(segs, ghost){
     const box = $('hMapBox'), pts = segs.flat();
     if(pts.length < 2){ box.style.display = 'none'; return; }
@@ -1243,11 +1335,27 @@
     histMap.set(layers, { ends: true, fit: true, fitPts: pts, ref: pts[Math.floor(pts.length/2)], note: 'green start, red end' + (ghost ? ' · dashed: whole trip (simulated, straight lines between cities)' : '') });
   }
   // live map on the Ride screen (Real ride): route around you, part done in grey
-  const liveMap = createMap($('lMap'), $('lMapAttr'), $('lIn'), $('lOut'), $('lCenter'));
+  const liveMap = createMap($('lMap'), $('lMapAttr'), null, null, true);
   liveMap.M.follow = true; liveMap.M.z = 15;
   let liveKey = '';
+  // Route screen in Real ride: whole GPX with your position
+  const routeMap = createMap($('rMap'), $('rMapAttr'), null, null, true);
+  let routeShown = '';
+  function renderRouteGps(){
+    if(MODE !== 'gps') return;
+    const on = GPX && GPX.la && GPX.nav;
+    if(!on){ $('rRouteInfo').textContent = 'No route loaded. Tap Load GPX on the Ride screen or in Trip.'; $('rRouteSt').textContent = ''; $('rRouteBar').style.width = '0%'; if(routeShown !== 'none'){ routeShown = 'none'; routeMap.set([], { ref: GP.fix ? GP.fix.p : [31, 121] }); } if(GP.fix) routeMap.setMarker(GP.fix.p); return; }
+    const key = GPX.name + GPX.total;
+    if(routeShown !== key){ routeShown = key; const step = Math.max(1, Math.floor(GPX.la.length/2000)), pts = []; for(let i=0;i<GPX.la.length;i+=step) pts.push([GPX.la[i], GPX.lo[i]]); pts.push([GPX.la[GPX.la.length-1], GPX.lo[GPX.lo.length-1]]); routeMap.set([{ pts, color: '#1F5FD1', w: 4, casing: true }], { ends: true, fit: true, fitPts: pts, ref: pts[Math.floor(pts.length/2)], note: 'green start, red end, blue dot: you' }); }
+    $('rRouteSt').textContent = NAV.matched ? (NAV.off ? 'Off route' : 'On route') : 'Waiting for GPS';
+    $('rRouteInfo').textContent = GPX.name + ' · ' + fmt(GPX.total) + ' km' + (NAV.matched && !NAV.off ? ' · km ' + NAV.km.toFixed(1) + ' done · ' + fmt(GPX.total - NAV.km) + ' km to go' : NAV.matched ? ' · you are ' + (NAV.dist >= 1000 ? fmt(NAV.dist/1000) + ' km' : Math.round(NAV.dist) + ' m') + ' from the route' : '');
+    $('rRouteBar').style.width = (NAV.matched && !NAV.off ? NAV.km/GPX.total*100 : 0).toFixed(2) + '%';
+    if(GP.fix) routeMap.setMarker(GP.fix.p);
+  }
+  setInterval(() => { if(MODE === 'gps' && $('v-route').classList.contains('on')) renderRouteGps(); if(MODE === 'gps'){ const st = (typeof bikeState === 'function') ? bikeState() : null; $('eBikeSt').textContent = st && st.linked ? 'Connected' : 'Not connected'; $('eMotorWant').textContent = '— (setting ' + S.motorSet + ' W)'; } }, 1000);
+  document.querySelector('nav.tabs button[data-v="route"]').addEventListener('click', () => setTimeout(() => { routeShown = ''; renderRouteGps(); }, 50));
   // after loading a GPX: show it on a map and ask whether to ride it
-  const gpxMap = createMap($('gpxMap'), $('gpxMapAttr'), $('gpxIn2'), $('gpxOut'));
+  const gpxMap = createMap($('gpxMap'), $('gpxMapAttr'));
   function askRide(){
     let up = 0, down = 0; for(let i=1;i<GPX.ele.length;i++){ const d = GPX.ele[i] - GPX.ele[i-1]; if(d > 0) up += d; else down -= d; }
     $('gpxDlgInfo').textContent = GPX.name + ' · ' + fmt(GPX.total) + ' km · climb +' + fmt(up) + ' m / −' + fmt(down) + ' m · ≈ ' + Math.ceil(GPX.total/174) + (Math.ceil(GPX.total/174) === 1 ? ' day' : ' days') + ' at 174 km/day';
