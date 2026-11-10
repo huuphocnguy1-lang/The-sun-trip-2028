@@ -115,6 +115,7 @@
   .gpsonly{display:none!important}
   .screen.gps .gpsonly{display:flex!important}
   .screen.gps .gpsgrid{display:grid!important}
+  .navb.off{background:#7A1F1F!important;color:#fff!important}
 </style>
 </head>
 <body>
@@ -193,6 +194,18 @@
   <div class="camp simonly" id="camp">Stopped (lunch or night) · battery keeps charging while the sun is up.</div>
 
   <!-- RIDE -->
+  <div class="dlg" id="gpxDlg" role="dialog" aria-modal="true" aria-labelledby="gpxDlgTitle">
+    <div>
+      <b id="gpxDlgTitle" style="font-size:20px">Ride this route?</b>
+      <div class="small num" id="gpxDlgInfo">—</div>
+      <div id="gpxMap" style="position:relative;height:240px;border-radius:14px;overflow:hidden;background:#1d2128;touch-action:none"></div>
+      <div class="row small"><span id="gpxMapAttr"></span><span style="display:flex;gap:6px"><button type="button" class="pw" id="gpxOut" aria-label="Zoom out">−</button><button type="button" class="pw" id="gpxIn2" aria-label="Zoom in">+</button></span></div>
+      <div class="ridebar">
+        <button type="button" class="rb pause" id="gpxNo">No</button>
+        <button type="button" class="rb go" id="gpxYes" style="flex:1.6">Yes, ride it</button>
+      </div>
+    </div>
+  </div>
   <div class="dlg" id="stopDlg" role="dialog" aria-modal="true" aria-labelledby="stopTitle">
     <div>
       <b id="stopTitle" style="font-size:20px">End this ride?</b>
@@ -214,6 +227,21 @@
       <button type="button" class="rb stop" id="rbStop" style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>Stop</button>
       <button type="button" class="rb k simonly" id="rbK" aria-label="Simulation speed">×60</button>
     </div>
+    <section class="navb gpsonly" id="gNav" aria-live="polite" aria-label="Navigation along your GPX" style="display:none">
+      <div class="arr"><svg id="gNavIco" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg></div>
+      <div style="flex:1;min-width:0">
+        <div class="g num" id="gNavDist" style="font-size:26px;line-height:1.1">—</div>
+        <div id="gNavTxt" style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        <div id="gNavThen" style="font-size:12px;opacity:.85">—</div>
+      </div>
+      <button type="button" class="vb" id="gVoiceBtn" aria-label="Voice guidance"><svg id="gVoiceIco" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg></button>
+    </section>
+    <section class="card gpsonly" style="flex-direction:column;gap:6px;display:none">
+      <div class="small num" id="gNavProg"></div>
+      <div class="bar" style="height:8px"><i id="gNavBar" style="width:0%"></i></div>
+      <div id="lMap" style="position:relative;height:220px;border-radius:14px;overflow:hidden;background:#1d2128;touch-action:none;cursor:grab"></div>
+      <div class="row small"><span id="lMapAttr"></span><span style="display:flex;gap:6px"><button type="button" class="pw" id="lCenter" aria-label="Centre on my position">◎</button><button type="button" class="pw" id="lOut" aria-label="Zoom out">−</button><button type="button" class="pw" id="lIn" aria-label="Zoom in">+</button></span></div>
+    </section>
     <section class="card dark gpsonly" style="flex-direction:column;padding:16px 18px;gap:8px">
       <div class="row"><span style="font-size:13px;color:#B9BDC8">Speed · GPS</span><span class="num" id="gStatus" style="font-size:13px;color:#B9BDC8">GPS off</span></div>
       <div style="display:flex;align-items:baseline;gap:8px"><span class="g num" id="gSpd" style="font-size:64px;line-height:1">0.0</span><span style="font-size:18px;color:#B9BDC8">km/h</span></div>
@@ -393,7 +421,7 @@
   <!-- TALK -->
   <div class="view" id="v-talk">
     <section class="card">
-      <div class="row"><span class="lbl">Channel · Team Guangzhou</span><span class="small" id="talkLink">Demo</span></div>
+      <div class="row"><span class="lbl">Walkie-talkie channel</span><span class="small" id="talkLink">Demo</span></div>
       <div id="talkSetup" style="display:none;flex-direction:column;gap:8px">
         <label class="small" for="talkName">Your name on the channel</label>
         <div style="display:flex;gap:8px"><input id="talkName" maxlength="20" placeholder="e.g. Bryan" style="flex:1;min-width:0;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--ground);color:var(--ink);font:600 15px Inter,sans-serif;padding:0 12px"><button type="button" class="rb go" id="talkJoin" style="flex:0 0 110px">Join</button></div>
@@ -705,8 +733,10 @@
     if(!('speechSynthesis' in window)) return;
     try{ const u = new SpeechSynthesisUtterance(txt); u.lang='en-GB'; aud.volume = 0.2; u.onend = () => { aud.volume = 1; }; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){}
   }
-  $('voiceBtn').addEventListener('click', () => { voiceOn = !voiceOn; if(voiceOn) say('Voice guidance on'); $('voiceIco').innerHTML = voiceOn ? VON : VOFF; $('voiceBtn').setAttribute('aria-pressed', String(voiceOn)); $('voiceBtn').setAttribute('aria-label', voiceOn ? 'Voice guidance on' : 'Voice guidance off'); });
+  $('voiceBtn').addEventListener('click', () => { voiceOn = !voiceOn; if(voiceOn) say('Voice guidance on'); $('voiceIco').innerHTML = voiceOn ? VON : VOFF; $('voiceBtn').setAttribute('aria-pressed', String(voiceOn)); $('voiceBtn').setAttribute('aria-label', voiceOn ? 'Voice guidance on' : 'Voice guidance off'); $('gVoiceIco').innerHTML = voiceOn ? VON : VOFF; });
   $('voiceIco').innerHTML = VON;
+  $('gVoiceIco').innerHTML = VON;
+  $('gVoiceBtn').addEventListener('click', () => $('voiceBtn').click());
   function renderNav(){
     let n = Math.ceil((S.km - 0.6)/STEP); if(turnN(n).at <= S.km) n++;
     const a = turnN(n), b = turnN(n+1);
@@ -755,18 +785,109 @@
       const doc = new DOMParser().parseFromString(await f.text(), 'application/xml');
       const pts = [...doc.querySelectorAll('trkpt, rtept')];
       if(pts.length < 2) throw new Error('no points');
-      const km = [0], ele = []; let prev = null, lastE = 0;
+      const km = [0], ele = [], la = [], lo = []; let prev = null, lastE = 0;
       pts.forEach((p,i) => {
         const ll = [parseFloat(p.getAttribute('lat')), parseFloat(p.getAttribute('lon'))];
         const eEl = p.getElementsByTagName('ele')[0]; const e = eEl ? parseFloat(eEl.textContent) : lastE; lastE = isNaN(e) ? lastE : e;
-        if(prev) km.push(km[km.length-1] + hav(prev, ll)); prev = ll; ele.push(lastE);
+        if(prev) km.push(km[km.length-1] + hav(prev, ll)); prev = ll; ele.push(lastE); la.push(ll[0]); lo.push(ll[1]);
       });
       // smooth elevation over ~5 points to remove GPS noise
       const sm = ele.map((_,i) => { let a=0,n=0; for(let j=Math.max(0,i-2); j<=Math.min(ele.length-1,i+2); j++){ a+=ele[j]; n++; } return a/n; });
-      GPX = { name: f.name, km: km, ele: sm, total: km[km.length-1] };
-      $('gpxInfo').textContent = 'Route: ' + f.name + ' · ' + fmt(GPX.total) + ' km · ' + pts.length.toLocaleString() + ' points';
+      GPX = { name: f.name, km: km, ele: sm, la: la, lo: lo, total: km[km.length-1], nav: false };
+      gpxInfoText(); askRide();
+      e.target.value = '';
     }catch(err){ $('gpxInfo').textContent = 'Could not read this GPX file. Export it again from komoot as “GPX track”.'; }
   });
+
+  function gpxInfoText(){ $('gpxInfo').textContent = GPX ? 'Route: ' + GPX.name + ' · ' + fmt(GPX.total) + ' km · ' + GPX.km.length.toLocaleString() + ' points' + (GPX.nav ? ' · navigation on (Real ride)' : ' · simulation only') : 'Route: example Lyon → Guangzhou (14 300 km). Load your komoot GPX to use the real route.'; }
+  function saveGpx(){ try{ let a = 0, b = 0, c = 0; const d = []; for(let i=0;i<GPX.la.length;i++){ const x = Math.round(GPX.la[i]*1e5), y = Math.round(GPX.lo[i]*1e5), z = Math.round(GPX.ele[i]); d.push(x-a, y-b, z-c); a = x; b = y; c = z; } localStorage.setItem('sunTripGpx', JSON.stringify({ n: GPX.name, d: d })); }catch(e){} }
+  function loadGpx(){ try{ const o = JSON.parse(localStorage.getItem('sunTripGpx') || 'null'); if(!o) return; const la = [], lo = [], ele = [], km = [0]; let a = 0, b = 0, c = 0; for(let i=0;i<o.d.length;i+=3){ a += o.d[i]; b += o.d[i+1]; c += o.d[i+2]; la.push(a/1e5); lo.push(b/1e5); ele.push(c); if(la.length > 1) km.push(km[km.length-1] + hav([la[la.length-2], lo[lo.length-2]], [la[la.length-1], lo[lo.length-1]])); } GPX = { name: o.n, la, lo, ele, km, total: km[km.length-1], nav: true }; }catch(e){ GPX = null; } }
+
+  // ---------- navigation along the GPX (Real ride) ----------
+  const NAV = { turns: [], ready: false, idx: 0, matched: false, km: 0, dist: null, off: false, offSince: 0, lastOffSay: 0, said: {}, course: null, cPrev: null, toRoute: null };
+  const brg = (a, b) => { const r = Math.PI/180, y = Math.sin((b[1]-a[1])*r)*Math.cos(b[0]*r), x = Math.cos(a[0]*r)*Math.sin(b[0]*r) - Math.sin(a[0]*r)*Math.cos(b[0]*r)*Math.cos((b[1]-a[1])*r); return (Math.atan2(y, x)/r + 360) % 360; };
+  const angDiff = (a, b) => { let d = b - a; while(d > 180) d -= 360; while(d < -180) d += 360; return d; };
+  function gpxAt(k){ const K = GPX.km; let lo2 = 0, hi = K.length-1; if(k <= 0) return [GPX.la[0], GPX.lo[0]]; if(k >= GPX.total) return [GPX.la[hi], GPX.lo[hi]]; while(hi-lo2 > 1){ const m = (lo2+hi)>>1; if(K[m] <= k) lo2 = m; else hi = m; } const f = (k-K[lo2])/Math.max(1e-9, K[hi]-K[lo2]); return [GPX.la[lo2] + (GPX.la[hi]-GPX.la[lo2])*f, GPX.lo[lo2] + (GPX.lo[hi]-GPX.lo[lo2])*f]; }
+  function buildNav(){
+    NAV.ready = false; NAV.turns = []; NAV.matched = false; NAV.said = {};
+    if(!GPX || !GPX.la) return;
+    setTimeout(() => {
+      const STEP = 0.02, RS = [];
+      for(let k = 0; k <= GPX.total; k += STEP) RS.push([...gpxAt(k), k]);
+      const W = 2, N = RS.length, mark = new Uint8Array(N);
+      for(let i = W; i < N-W; i++){ const d = angDiff(brg(RS[i-W], RS[i]), brg(RS[i], RS[i+W])); if(Math.abs(d) > 25) mark[i] = 1; }
+      const turns = [];
+      for(let i = 0; i < N; i++){
+        if(!mark[i]) continue;
+        let e = i; while(e+1 < N && mark[e+1]) e++;
+        const a0 = RS[Math.max(0, i-3)], a1 = RS[i], b0 = RS[e], b1 = RS[Math.min(N-1, e+3)];
+        const d = angDiff(brg(a0, a1), brg(b0, b1));
+        if(Math.abs(d) >= 30){
+          const k = RS[(i+e)>>1][2];
+          const last = turns[turns.length-1];
+          if(last && k - last.km < 0.06){ last.a = angDiff(0, last.a + d); last.km = k; } else turns.push({ km: k, a: d });
+        }
+        i = e;
+      }
+      NAV.turns = turns.filter(t => Math.abs(t.a) >= 30);
+      NAV.ready = true;
+    }, 30);
+  }
+  function turnText(a){ const sd = a > 0 ? 'right' : 'left', x = Math.abs(a); if(x >= 165) return 'Make a U-turn'; if(x >= 110) return 'Sharp ' + sd; if(x >= 55) return 'Turn ' + sd; return 'Keep ' + sd; }
+  function turnIcon(a){ if(Math.abs(a) >= 165) return '<path d="M8 20V9a4 4 0 0 1 8 0v4M12 10l4 4 4-4"/>'; return '<g transform="rotate(' + Math.max(-135, Math.min(135, a)).toFixed(0) + ' 12 12)"><path d="M12 20V6M6 11l6-6 6 6"/></g>'; }
+  const COMPASS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
+  function navMatch(p){
+    const la = GPX.la, lo = GPX.lo, n = la.length, cosl = Math.cos(p[0]*Math.PI/180);
+    const X = i => (lo[i] - p[1])*111320*cosl, Y = i => (la[i] - p[0])*110540;
+    const segBest = (from, to) => { let best = { d: Infinity, i: 0, t: 0 }; for(let i = Math.max(0, from); i < Math.min(n-1, to); i++){ const ax = X(i), ay = Y(i), bx = X(i+1), by = Y(i+1), dx = bx-ax, dy = by-ay, L = dx*dx + dy*dy; let t = L > 0 ? -(ax*dx + ay*dy)/L : 0; t = Math.max(0, Math.min(1, t)); const qx = ax + t*dx, qy = ay + t*dy, d0 = Math.sqrt(qx*qx + qy*qy), sk = GPX.km[i] + t*(GPX.km[i+1]-GPX.km[i]), back = NAV.matched ? NAV.km - sk : 0, d = d0 + (back > 0.03 ? 25 + back*500 : 0); if(d < best.d) best = { d, d0, i, t }; } return best; };
+    let b = NAV.matched ? segBest(NAV.idx - 60, NAV.idx + 600) : { d: Infinity };
+    if(b.d > 150) b = segBest(0, n);
+    NAV.idx = b.i; NAV.matched = true; NAV.dist = b.d0;
+    NAV.km = GPX.km[b.i] + b.t*(GPX.km[b.i+1] - GPX.km[b.i]);
+    NAV.toRoute = [la[b.i] + (la[b.i+1]-la[b.i])*b.t, lo[b.i] + (lo[b.i+1]-lo[b.i])*b.t];
+  }
+  function navUpdate(p){
+    if(!GPX || !GPX.la || !GPX.nav) return;
+    if(NAV.cPrev && hav(NAV.cPrev, p) > 0.012){ NAV.course = brg(NAV.cPrev, p); NAV.cPrev = p; } else if(!NAV.cPrev) NAV.cPrev = p;
+    navMatch(p);
+    const active = S.started && !S.paused, now = Date.now();
+    if(NAV.dist > 50){ if(!NAV.offSince) NAV.offSince = now; if(!NAV.off && now - NAV.offSince > 8000){ NAV.off = true; } }
+    else if(NAV.dist < 30){ if(NAV.off && active) say('Back on route'); NAV.off = false; NAV.offSince = 0; }
+    if(NAV.off && active && now - NAV.lastOffSay > 60000){ NAV.lastOffSay = now; const dir = COMPASS[Math.round(brg(p, NAV.toRoute)/45) % 8]; say('You are off route. The route is ' + Math.round(NAV.dist/10)*10 + ' metres to the ' + dir); }
+    if(!NAV.ready || NAV.off || !active) return;
+    const t = NAV.turns.find(x => x.km > NAV.km + 0.005);
+    if(!t) { if(GPX.total - NAV.km < 0.05 && !NAV.said.end){ NAV.said.end = 1; say('You have arrived at the end of the route'); } return; }
+    const dm = (t.km - NAV.km)*1000, id = t.km.toFixed(3);
+    if(dm < 520 && dm > 300 && !NAV.said[id+'a']){ NAV.said[id+'a'] = 1; say('In 500 metres, ' + turnText(t.a).toLowerCase()); }
+    if(dm < 170 && dm > 60 && !NAV.said[id+'b']){ NAV.said[id+'b'] = 1; NAV.said[id+'a'] = 1; say('In ' + Math.round(dm/50)*50 + ' metres, ' + turnText(t.a).toLowerCase()); }
+    if(dm <= 35 && !NAV.said[id+'c']){ NAV.said[id+'c'] = 1; NAV.said[id+'b'] = 1; NAV.said[id+'a'] = 1; say(turnText(t.a) + ' now'); }
+  }
+  function renderNavGps(){
+    const box = $('gNav');
+    if(!GPX || !GPX.la || !GPX.nav){ box.classList.remove('off'); $('gNavIco').innerHTML = '<path d="M9 4l6 2 6-2v14l-6 2-6-2-6 2V6z"/><path d="M9 4v14M15 6v14"/>'; $('gNavDist').textContent = 'No route'; $('gNavTxt').textContent = 'Load your komoot GPX in Trip › Load GPX'; $('gNavThen').textContent = 'Then the app guides you along it, offline'; $('gNavProg').textContent = ''; return; }
+    if(!GP.fix || !NAV.matched){ $('gNavDist').textContent = 'Waiting for GPS'; $('gNavTxt').textContent = GPX.name; $('gNavThen').textContent = fmt(GPX.total) + ' km route'; $('gNavIco').innerHTML = '<circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/>'; return; }
+    const left = Math.max(0, GPX.total - NAV.km), avg = GP.rec && GP.rec.sec > 600 ? GP.rec.km/(GP.rec.sec/3600) : 18;
+    $('gNavProg').textContent = 'km ' + NAV.km.toFixed(1) + ' of ' + fmt(GPX.total) + ' · ' + (left < 10 ? left.toFixed(1) : fmt(left)) + ' km to go · ≈ ' + hmDur(left/avg*3600) + ' riding';
+    $('gNavBar').style.width = (NAV.km/GPX.total*100).toFixed(2) + '%';
+    if(NAV.off){
+      box.classList.add('off');
+      const b2 = brg(GP.fix.p, NAV.toRoute), rel = NAV.course == null ? b2 : angDiff(NAV.course, b2);
+      $('gNavIco').innerHTML = '<g transform="rotate(' + rel.toFixed(0) + ' 12 12)"><path d="M12 20V5M6 11l6-6 6 6"/></g>';
+      $('gNavDist').textContent = 'Off route · ' + Math.round(NAV.dist) + ' m';
+      $('gNavTxt').textContent = 'Route is to the ' + COMPASS[Math.round(b2/45) % 8] + (NAV.course == null ? '' : ' (arrow points to it)');
+      $('gNavThen').textContent = 'Go back to the route to continue';
+      return;
+    }
+    box.classList.remove('off');
+    if(!NAV.ready){ $('gNavDist').textContent = 'On route'; $('gNavTxt').textContent = 'Preparing turn directions…'; $('gNavThen').textContent = ''; return; }
+    const i = NAV.turns.findIndex(x => x.km > NAV.km + 0.005);
+    if(i < 0){ $('gNavIco').innerHTML = '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>'; $('gNavDist').textContent = (left*1000 < 1000 ? Math.round(left*1000) + ' m' : left.toFixed(1) + ' km'); $('gNavTxt').textContent = 'to the end of the route'; $('gNavThen').textContent = 'No more turns'; return; }
+    const t = NAV.turns[i], dm = (t.km - NAV.km)*1000, nx = NAV.turns[i+1];
+    $('gNavIco').innerHTML = turnIcon(t.a);
+    $('gNavDist').textContent = dm >= 1000 ? (dm/1000).toFixed(1) + ' km' : (Math.round(dm/10)*10) + ' m';
+    $('gNavTxt').textContent = turnText(t.a) + ' (' + Math.round(Math.abs(t.a)) + '°)';
+    $('gNavThen').textContent = nx ? 'Then ' + turnText(nx.a).toLowerCase() + ' ' + ((nx.km - t.km) < 1 ? Math.round((nx.km - t.km)*1000) + ' m' : (nx.km - t.km).toFixed(1) + ' km') + ' later' : 'Then straight to the end';
+  }
 
   // ---------- full-trip simulation ----------
   function runSimulation(){
@@ -910,6 +1031,7 @@
   let lastHistLen = -1, lastHistT = 0;
   setInterval(() => { const L = histList().length + (MODE === 'gps' ? 1000 : 0); if(L !== lastHistLen){ lastHistLen = L; fillSel(); } if(hIdx < 0) renderHist(); }, 1000);
   fillSel(); renderHist();
+  loadGpx(); if(GPX){ gpxInfoText(); buildNav(); }
   setMode(true);
   // ---------- loop ----------
   let last = performance.now();
@@ -921,7 +1043,7 @@
       if(!(h >= 6 && h < 20)) simDt *= 20; // skip the night faster
       while(simDt > 0){ const d = Math.min(5, simDt); step(d); simDt -= d; }
     }
-    render(); if(MODE === 'sim') renderNav(); else renderGps();
+    render(); if(MODE === 'sim') renderNav(); else { renderGps(); renderNavGps(); }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
@@ -970,6 +1092,7 @@
     const c = pos.coords, t = pos.timestamp, p = [c.latitude, c.longitude];
     GP.fix = { p, acc: c.accuracy, alt: c.altitude, t };
     GP.err = null;
+    if(c.accuracy <= 35) navUpdate(p);
     if(c.accuracy > 35){ GP.v = 0; return; }
     if(c.altitude != null){ GP.altF = GP.altF == null ? c.altitude : GP.altF*0.8 + c.altitude*0.2; }
     if(!S.started || S.paused){ GP.last = { p, t }; GP.v = (c.speed != null && c.speed >= 0) ? c.speed : 0; return; }
@@ -1012,6 +1135,7 @@
   }
   function gpsOff(){ if(GP.watch != null){ try{ navigator.geolocation.clearWatch(GP.watch); }catch(e){} GP.watch = null; } }
   setInterval(() => { if(MODE === 'gps' && GP.rec) saveReal(); }, 30000);
+  setInterval(renderLiveMap, 1000);
   function renderGps(){
     const r = GP.rec || { km: 0, sec: 0, maxV: 0, up: 0, down: 0 };
     const f = GP.fix;
@@ -1034,62 +1158,128 @@
     $('gpsChip').classList.toggle('off', GP.watch != null && q <= 1);
     $('gPos').textContent = f ? 'Position: ' + f.p[0].toFixed(5) + ', ' + f.p[1].toFixed(5) : 'Position: —';
   }
-  // ---------- map (OpenStreetMap; AMap inside China, with the China map offset) ----------
+  // ---------- maps (OpenStreetMap; AMap inside China, with the China map offset) ----------
   function outChina(lat, lon){ return lon < 72.004 || lon > 137.8347 || lat < 0.8293 || lat > 55.8271; }
   function tLat(x, y){ let r = -100 + 2*x + 3*y + 0.2*y*y + 0.1*x*y + 0.2*Math.sqrt(Math.abs(x)); r += (20*Math.sin(6*x*Math.PI) + 20*Math.sin(2*x*Math.PI))*2/3; r += (20*Math.sin(y*Math.PI) + 40*Math.sin(y/3*Math.PI))*2/3; r += (160*Math.sin(y/12*Math.PI) + 320*Math.sin(y*Math.PI/30))*2/3; return r; }
   function tLon(x, y){ let r = 300 + x + 2*y + 0.1*x*x + 0.1*x*y + 0.1*Math.sqrt(Math.abs(x)); r += (20*Math.sin(6*x*Math.PI) + 20*Math.sin(2*x*Math.PI))*2/3; r += (20*Math.sin(x*Math.PI) + 40*Math.sin(x/3*Math.PI))*2/3; r += (150*Math.sin(x/12*Math.PI) + 300*Math.sin(x/30*Math.PI))*2/3; return r; }
   function toGcj(lat, lon){ if(outChina(lat, lon)) return [lat, lon]; const a = 6378245, ee = 0.00669342162296594323; let dLat = tLat(lon-105, lat-35), dLon = tLon(lon-105, lat-35); const rad = lat/180*Math.PI; let m = Math.sin(rad); m = 1 - ee*m*m; const sm = Math.sqrt(m); dLat = (dLat*180)/((a*(1-ee))/(m*sm)*Math.PI); dLon = (dLon*180)/(a/sm*Math.cos(rad)*Math.PI); return [lat + dLat, lon + dLon]; }
-  const MAP = { segs: null, z: 10, cx: 0, cy: 0, china: false };
-  const px = (lat, lon, z) => { const n = 256*Math.pow(2, z), x = (lon + 180)/360*n, s2 = Math.sin(lat*Math.PI/180); return [x, (0.5 - Math.log((1+s2)/(1-s2))/(4*Math.PI))*n]; };
   const STOPLL = { 'Lyon':[45.764,4.836], 'Geneva':[46.204,6.143], 'Munich':[48.137,11.575], 'Vienna':[48.208,16.373], 'Budapest':[47.498,19.040], 'Kyiv':[50.450,30.523], 'Kharkiv':[49.994,36.230], 'Voronezh':[51.672,39.184], 'Volgograd':[48.708,44.513], 'Astrakhan':[46.349,48.040], 'Atyrau':[47.094,51.924], 'Aktobe':[50.283,57.167], 'Baikonur':[45.617,63.317], 'Tashkent':[41.299,69.240], 'Bishkek':[42.875,74.570], 'Urumqi':[43.825,87.617], 'Hami':[42.818,93.515], 'Lanzhou':[36.061,103.834], 'Xi\u2019an':[34.341,108.940], 'Wuhan':[30.593,114.305], 'Guangzhou':[23.129,113.264] };
   function llAt(km){ for(let i=1;i<STOPS.length;i++){ const a = STOPS[i-1], b = STOPS[i]; if(km <= b[1] || i === STOPS.length-1){ const f = Math.max(0, Math.min(1, (km - a[1])/Math.max(1, b[1]-a[1]))); const A = STOPLL[a[0]], B = STOPLL[b[0]]; return [A[0] + (B[0]-A[0])*f, A[1] + (B[1]-A[1])*f]; } } return STOPLL['Guangzhou']; }
   function simPath(from, to){ const out = []; const n = Math.max(2, Math.ceil((to - from)/2)); for(let i=0;i<=n;i++) out.push(llAt(from + (to-from)*i/n)); return out; }
-  function showMap(segs, ghost){
-    MAP.ghost = ghost || null;
-    const box = $('hMapBox');
-    const pts = segs.flat();
-    if(pts.length < 2){ box.style.display = 'none'; MAP.segs = null; return; }
-    box.style.display = 'flex';
-    const mid = pts[Math.floor(pts.length/2)];
-    MAP.china = !outChina(mid[0], mid[1]);
-    MAP.segs = MAP.china ? segs.map(sg => sg.map(p => toGcj(p[0], p[1]))) : segs;
-    if(MAP.ghost) MAP.ghost = MAP.china ? MAP.ghost.map(p => toGcj(p[0], p[1])) : MAP.ghost;
-    const all = MAP.segs.flat(), el = $('hMap'), W = el.clientWidth || 330, H = el.clientHeight || 260;
-    let z = 17;
-    for(; z > 2; z--){ const xs = all.map(p => px(p[0], p[1], z)); const w = Math.max(...xs.map(q => q[0])) - Math.min(...xs.map(q => q[0])), h = Math.max(...xs.map(q => q[1])) - Math.min(...xs.map(q => q[1])); if(w < W - 40 && h < H - 40) break; }
-    const xs = all.map(p => px(p[0], p[1], z));
-    MAP.z = z; MAP.cx = (Math.max(...xs.map(q => q[0])) + Math.min(...xs.map(q => q[0])))/2; MAP.cy = (Math.max(...xs.map(q => q[1])) + Math.min(...xs.map(q => q[1])))/2;
-    drawMap();
-  }
-  function drawMap(){
-    if(!MAP.segs) return;
-    const el = $('hMap'), W = el.clientWidth || 330, H = el.clientHeight || 260, z = MAP.z;
-    const ox = MAP.cx - W/2, oy = MAP.cy - H/2, n = Math.pow(2, z);
-    let html = '';
-    for(let tx = Math.floor(ox/256); tx <= Math.floor((ox+W)/256); tx++) for(let ty = Math.floor(oy/256); ty <= Math.floor((oy+H)/256); ty++){
-      if(ty < 0 || ty >= n) continue;
-      const x = ((tx % n) + n) % n;
-      const url = MAP.china ? 'https://webrd0' + (1 + ((x + ty) % 4)) + '.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x=' + x + '&y=' + ty + '&z=' + z
-                            : 'https://tile.openstreetmap.org/' + z + '/' + x + '/' + ty + '.png';
-      html += '<img alt="" draggable="false" src="' + url + '" style="position:absolute;left:' + Math.round(tx*256 - ox) + 'px;top:' + Math.round(ty*256 - oy) + 'px;width:256px;height:256px;' + (dk() ? 'filter:brightness(.75) contrast(1.1)' : '') + '" onerror="this.style.display=&quot;none&quot;">';
+  const px = (lat, lon, z) => { const n = 256*Math.pow(2, z), x = (lon + 180)/360*n, s2 = Math.sin(lat*Math.PI/180); return [x, (0.5 - Math.log((1+s2)/(1-s2))/(4*Math.PI))*n]; };
+  function createMap(el, attrEl, inBtn, outBtn, centerBtn){
+    el.innerHTML = '<div style="position:absolute;inset:0"></div><div style="position:absolute;inset:0;pointer-events:none"></div>';
+    const tl = el.children[0], sv = el.children[1], tiles = {};
+    const M = { layers: [], z: 12, cx: 0, cy: 0, china: false, marker: null, follow: false, ends: false, note: '', dragT: 0 };
+    const cv = p => M.china ? toGcj(p[0], p[1]) : p;
+    function size(){ return [el.clientWidth || 330, el.clientHeight || 220]; }
+    function fit(pts){
+      const [W, H] = size(); let z = 17;
+      for(; z > 2; z--){ const xs = pts.map(p => px(p[0], p[1], z)); const w = Math.max(...xs.map(q => q[0])) - Math.min(...xs.map(q => q[0])), h = Math.max(...xs.map(q => q[1])) - Math.min(...xs.map(q => q[1])); if(w < W - 40 && h < H - 40) break; }
+      const xs = pts.map(p => px(p[0], p[1], z));
+      M.z = z; M.cx = (Math.max(...xs.map(q => q[0])) + Math.min(...xs.map(q => q[0])))/2; M.cy = (Math.max(...xs.map(q => q[1])) + Math.min(...xs.map(q => q[1])))/2;
     }
-    let svg = '<svg width="' + W + '" height="' + H + '" style="position:absolute;left:0;top:0" aria-hidden="true">';
-    if(MAP.ghost){ const d = MAP.ghost.map((p,i) => { const q = px(p[0], p[1], z); return (i ? 'L' : 'M') + (q[0]-ox).toFixed(1) + ' ' + (q[1]-oy).toFixed(1); }).join(' '); svg += '<path d="' + d + '" fill="none" stroke="#9AA3B5" stroke-width="2.5" stroke-dasharray="5 5" opacity=".8"/>'; }
-    MAP.segs.forEach(sg => { if(sg.length < 2) return; const d = sg.map((p,i) => { const q = px(p[0], p[1], z); return (i ? 'L' : 'M') + (q[0]-ox).toFixed(1) + ' ' + (q[1]-oy).toFixed(1); }).join(' '); svg += '<path d="' + d + '" fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" opacity=".9"/><path d="' + d + '" fill="none" stroke="#1F5FD1" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>'; });
-    const all = MAP.segs.flat(), a = px(all[0][0], all[0][1], z), b = px(all[all.length-1][0], all[all.length-1][1], z);
-    svg += '<circle cx="' + (a[0]-ox) + '" cy="' + (a[1]-oy) + '" r="7" fill="#1E8A4C" stroke="#fff" stroke-width="2.5"/><circle cx="' + (b[0]-ox) + '" cy="' + (b[1]-oy) + '" r="7" fill="#C93636" stroke="#fff" stroke-width="2.5"/></svg>';
-    el.innerHTML = html + svg;
-    $('hMapAttr').textContent = (MAP.china ? '© AutoNavi (Gaode) map' : '© OpenStreetMap contributors') + ' · green start, red end' + (MAP.ghost ? ' · dashed: whole trip (simulated, straight lines between cities)' : '');
-  }
-  (function mapControls(){
-    const el = $('hMap'); let drag = null;
-    el.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY, MAP.cx, MAP.cy]; el.setPointerCapture(e.pointerId); el.style.cursor = 'grabbing'; });
-    el.addEventListener('pointermove', e => { if(!drag) return; MAP.cx = drag[2] - (e.clientX - drag[0]); MAP.cy = drag[3] - (e.clientY - drag[1]); drawMap(); });
+    function set(layers, opts){
+      opts = opts || {};
+      const ref = opts.ref || (layers[0] && layers[0].pts[Math.floor(layers[0].pts.length/2)]);
+      if(ref) M.china = !outChina(ref[0], ref[1]);
+      M.layers = layers.map(L => Object.assign({}, L, { pts: L.pts.map(cv) }));
+      M.ends = !!opts.ends; M.note = opts.note || '';
+      if(opts.fit){ const all = (opts.fitPts || M.layers[0].pts.map(p => p)).map(p => opts.fitPts ? cv(p) : p); fit(all); }
+      if(opts.zoom){ M.z = opts.zoom; }
+      draw();
+    }
+    function setMarker(p, center){ M.marker = p ? cv(p) : null; if(M.marker && (center || (M.follow && Date.now() - M.dragT > 10000))){ const q = px(M.marker[0], M.marker[1], M.z); M.cx = q[0]; M.cy = q[1]; } draw(); }
+    function draw(){
+      const [W, H] = size(), z = M.z, ox = M.cx - W/2, oy = M.cy - H/2, n = Math.pow(2, z), need = {};
+      for(let tx = Math.floor(ox/256); tx <= Math.floor((ox+W)/256); tx++) for(let ty = Math.floor(oy/256); ty <= Math.floor((oy+H)/256); ty++){
+        if(ty < 0 || ty >= n) continue;
+        const x = ((tx % n) + n) % n, key = (M.china ? 'a' : 'o') + z + '/' + tx + '/' + ty; need[key] = 1;
+        let im = tiles[key];
+        if(!im){ im = document.createElement('img'); im.alt = ''; im.draggable = false; im.style.cssText = 'position:absolute;width:256px;height:256px;'; im.onerror = () => { im.style.visibility = 'hidden'; };
+          im.src = M.china ? 'https://webrd0' + (1 + ((x + ty) % 4)) + '.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x=' + x + '&y=' + ty + '&z=' + z : 'https://tile.openstreetmap.org/' + z + '/' + x + '/' + ty + '.png';
+          tiles[key] = im; tl.appendChild(im); }
+        im.style.left = Math.round(tx*256 - ox) + 'px'; im.style.top = Math.round(ty*256 - oy) + 'px'; im.style.filter = dk() ? 'brightness(.75) contrast(1.1)' : '';
+      }
+      for(const k in tiles) if(!need[k]){ tiles[k].remove(); delete tiles[k]; }
+      const path = pts => pts.map((p,i) => { const q = px(p[0], p[1], z); return (i ? 'L' : 'M') + (q[0]-ox).toFixed(1) + ' ' + (q[1]-oy).toFixed(1); }).join(' ');
+      let g = '<svg width="' + W + '" height="' + H + '" aria-hidden="true">';
+      M.layers.forEach(L => { if(L.pts.length < 2) return; const d = path(L.pts); if(L.casing) g += '<path d="' + d + '" fill="none" stroke="#fff" stroke-width="' + ((L.w || 4) + 3) + '" stroke-linejoin="round" stroke-linecap="round" opacity=".9"/>'; g += '<path d="' + d + '" fill="none" stroke="' + L.color + '" stroke-width="' + (L.w || 4) + '" stroke-linejoin="round" stroke-linecap="round"' + (L.dash ? ' stroke-dasharray="' + L.dash + '"' : '') + (L.op ? ' opacity="' + L.op + '"' : '') + '/>'; });
+      if(M.ends){ const main = M.layers.filter(L => L.casing).map(L => L.pts).flat(); if(main.length > 1){ const a = px(main[0][0], main[0][1], z), b = px(main[main.length-1][0], main[main.length-1][1], z); g += '<circle cx="' + (a[0]-ox) + '" cy="' + (a[1]-oy) + '" r="7" fill="#1E8A4C" stroke="#fff" stroke-width="2.5"/><circle cx="' + (b[0]-ox) + '" cy="' + (b[1]-oy) + '" r="7" fill="#C93636" stroke="#fff" stroke-width="2.5"/>'; } }
+      if(M.marker){ const q = px(M.marker[0], M.marker[1], z); g += '<circle cx="' + (q[0]-ox) + '" cy="' + (q[1]-oy) + '" r="13" fill="#1F5FD1" opacity=".25"/><circle cx="' + (q[0]-ox) + '" cy="' + (q[1]-oy) + '" r="7" fill="#1F5FD1" stroke="#fff" stroke-width="3"/>'; }
+      { // scale bar (bottom left)
+        const lat = Math.atan(Math.sinh(Math.PI*(1 - 2*M.cy/(256*n))))*180/Math.PI;
+        const mpp = 156543.03392*Math.cos(lat*Math.PI/180)/n;
+        const target = mpp*110, pw10 = Math.pow(10, Math.floor(Math.log10(target)));
+        const nice = [5, 2, 1].map(k => k*pw10).find(v => v <= target) || pw10;
+        const L = nice/mpp, x0 = 12, y0 = H - 14, lab = nice >= 1000 ? (nice/1000) + ' km' : nice + ' m';
+        g += '<g font-family="Inter,sans-serif" font-size="11" font-weight="700">'
+          + '<path d="M' + x0 + ' ' + (y0-6) + 'V' + y0 + 'H' + (x0+L).toFixed(1) + 'V' + (y0-6) + '" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>'
+          + '<path d="M' + x0 + ' ' + (y0-6) + 'V' + y0 + 'H' + (x0+L).toFixed(1) + 'V' + (y0-6) + '" fill="none" stroke="#16181D" stroke-width="2"/>'
+          + '<text x="' + (x0 + L/2).toFixed(1) + '" y="' + (y0-9) + '" text-anchor="middle" fill="#16181D" stroke="#fff" stroke-width="3" paint-order="stroke">' + lab + '</text></g>';
+      }
+      sv.innerHTML = g + '</svg>';
+      if(attrEl) attrEl.textContent = (M.china ? '© AutoNavi (Gaode) map' : '© OpenStreetMap contributors') + (M.note ? ' · ' + M.note : '');
+    }
+    let drag = null;
+    el.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY, M.cx, M.cy]; el.setPointerCapture(e.pointerId); el.style.cursor = 'grabbing'; });
+    el.addEventListener('pointermove', e => { if(!drag) return; M.cx = drag[2] - (e.clientX - drag[0]); M.cy = drag[3] - (e.clientY - drag[1]); M.dragT = Date.now(); draw(); });
     const end = () => { drag = null; el.style.cursor = 'grab'; };
     el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
-    const zoom = d => { const nz = Math.max(3, Math.min(18, MAP.z + d)); if(nz === MAP.z) return; const f = Math.pow(2, nz - MAP.z); MAP.cx *= f; MAP.cy *= f; MAP.z = nz; drawMap(); };
-    $('mapIn').addEventListener('click', () => zoom(1)); $('mapOut').addEventListener('click', () => zoom(-1));
-  })();
+    const zoom = d => { const nz = Math.max(3, Math.min(18, M.z + d)); if(nz === M.z) return; const f = Math.pow(2, nz - M.z); M.cx *= f; M.cy *= f; M.z = nz; draw(); };
+    if(inBtn) inBtn.addEventListener('click', () => zoom(1));
+    if(outBtn) outBtn.addEventListener('click', () => zoom(-1));
+    if(centerBtn) centerBtn.addEventListener('click', () => { M.dragT = 0; if(M.marker){ const q = px(M.marker[0], M.marker[1], M.z); M.cx = q[0]; M.cy = q[1]; draw(); } });
+    return { set, setMarker, draw, M };
+  }
+  const histMap = createMap($('hMap'), $('hMapAttr'), $('mapIn'), $('mapOut'));
+  function showMap(segs, ghost){
+    const box = $('hMapBox'), pts = segs.flat();
+    if(pts.length < 2){ box.style.display = 'none'; return; }
+    box.style.display = 'flex';
+    const layers = [];
+    if(ghost) layers.push({ pts: ghost, color: '#9AA3B5', w: 2.5, dash: '5 5', op: .8 });
+    segs.forEach(sg => layers.push({ pts: sg, color: '#1F5FD1', w: 4, casing: true }));
+    histMap.set(layers, { ends: true, fit: true, fitPts: pts, ref: pts[Math.floor(pts.length/2)], note: 'green start, red end' + (ghost ? ' · dashed: whole trip (simulated, straight lines between cities)' : '') });
+  }
+  // live map on the Ride screen (Real ride): route around you, part done in grey
+  const liveMap = createMap($('lMap'), $('lMapAttr'), $('lIn'), $('lOut'), $('lCenter'));
+  liveMap.M.follow = true; liveMap.M.z = 15;
+  let liveKey = '';
+  // after loading a GPX: show it on a map and ask whether to ride it
+  const gpxMap = createMap($('gpxMap'), $('gpxMapAttr'), $('gpxIn2'), $('gpxOut'));
+  function askRide(){
+    let up = 0, down = 0; for(let i=1;i<GPX.ele.length;i++){ const d = GPX.ele[i] - GPX.ele[i-1]; if(d > 0) up += d; else down -= d; }
+    $('gpxDlgInfo').textContent = GPX.name + ' · ' + fmt(GPX.total) + ' km · climb +' + fmt(up) + ' m / −' + fmt(down) + ' m · ≈ ' + Math.ceil(GPX.total/174) + (Math.ceil(GPX.total/174) === 1 ? ' day' : ' days') + ' at 174 km/day';
+    $('gpxDlg').style.display = 'flex';
+    const step = Math.max(1, Math.floor(GPX.la.length/1500)), pts = [];
+    for(let i=0;i<GPX.la.length;i+=step) pts.push([GPX.la[i], GPX.lo[i]]);
+    pts.push([GPX.la[GPX.la.length-1], GPX.lo[GPX.lo.length-1]]);
+    requestAnimationFrame(() => gpxMap.set([{ pts, color: '#1F5FD1', w: 4, casing: true }], { ends: true, fit: true, fitPts: pts, ref: pts[Math.floor(pts.length/2)], note: 'green start, red end' }));
+  }
+  $('gpxYes').addEventListener('click', () => {
+    $('gpxDlg').style.display = 'none';
+    GPX.nav = true; saveGpx(); buildNav(); gpxInfoText(); liveKey = '';
+    if(!S.started) setRideMode('gps');
+    document.querySelector('nav.tabs button[data-v="ride"]').click();
+    say('Route loaded. Press start ride when you are ready.');
+  });
+  $('gpxNo').addEventListener('click', () => { $('gpxDlg').style.display = 'none'; GPX.nav = false; gpxInfoText(); });
+  function renderLiveMap(){
+    if(MODE !== 'gps') return;
+    const f = GP.fix;
+    if(GPX && GPX.la && GPX.nav && NAV.matched){
+      const k = Math.round(NAV.km*10);
+      if(k !== liveKey){
+        liveKey = k;
+        const a = Math.max(0, NAV.km - 8), b = Math.min(GPX.total, NAV.km + 15), done = [], todo = [];
+        for(let x = a; x <= NAV.km; x += 0.05) done.push(gpxAt(x)); done.push(gpxAt(NAV.km));
+        for(let x = NAV.km; x <= b; x += 0.05) todo.push(gpxAt(x));
+        liveMap.set([{ pts: done, color: '#9AA3B5', w: 4 }, { pts: todo, color: '#1F5FD1', w: 5, casing: true }], { ref: f ? f.p : todo[0], note: 'blue: route ahead · grey: done' });
+      }
+    } else if(liveKey !== 'none'){ liveKey = 'none'; liveMap.set([], { ref: f ? f.p : [43, 93], note: GPX ? '' : 'load a GPX to see the route' }); }
+    if(f) liveMap.setMarker(f.p);
+  }
   function renderRealHist(){
     const list = histList(), live = hIdx < 0;
     const r = live ? (GP.rec || { date: todayKey(), km: 0, sec: 0, maxV: 0, up: 0, down: 0, tr: [] }) : list[hIdx];
