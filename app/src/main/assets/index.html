@@ -100,6 +100,21 @@
     .phone{width:100vw;height:100vh;border-radius:0;padding:0;box-shadow:none}
     .screen{border-radius:0}
   }
+  .ridebar{display:flex;gap:8px;align-items:center}
+  .rb{height:48px;border-radius:14px;border:0;font:700 16px Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;flex:1}
+  .rb.go{background:#1E8A4C;color:#fff}
+  .rb.pause{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+  .rb.stop{background:#C93636;color:#fff;flex:0 0 96px}
+  .rb.k{flex:0 0 64px;background:var(--card);color:var(--muted);border:1px solid var(--line);font-size:14px}
+  .dlg{position:absolute;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:5;padding:20px}
+  .dlg>div{background:var(--card);color:var(--ink);border-radius:20px;padding:20px;width:100%;display:flex;flex-direction:column;gap:12px;border:1px solid var(--line)}
+  .pausedTag{display:none;background:#FFF3DC;color:#7A4800;border-radius:10px;padding:4px 10px;font-size:13px;font-weight:700}
+  .chips button{height:36px;padding:0 12px;border-radius:18px;border:1px solid var(--line);background:var(--ground);color:var(--ink);font:600 13px Inter,sans-serif;cursor:pointer}
+  .chips button[aria-selected="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+  .screen.gps .simonly{display:none!important}
+  .gpsonly{display:none!important}
+  .screen.gps .gpsonly{display:flex!important}
+  .screen.gps .gpsgrid{display:grid!important}
 </style>
 </head>
 <body>
@@ -151,7 +166,7 @@
       <button type="button" data-k="600">×600</button>
     </div>
   </div>
-  <button type="button" class="btn" id="pauseBtn">Pause</button>
+  <button type="button" class="btn" id="pauseBtn">Start ride</button>
   <button type="button" class="btn" id="modeBtn2"><span id="modeTxt">Dark mode: on</span></button>
   <button type="button" class="btn" id="btBtn">Simulate Bluetooth drop</button>
   <p class="small">Motor: use − / + on the Ride screen (0–350 W, steps of 25 W). Speed and range change at once.</p>
@@ -174,11 +189,41 @@
     </span>
     </div>
   </header>
-  <div class="camp" id="camp">Stopped (lunch or night) · battery keeps charging while the sun is up.</div>
+  <div class="camp simonly" id="camp">Stopped (lunch or night) · battery keeps charging while the sun is up.</div>
 
   <!-- RIDE -->
+  <div class="dlg" id="stopDlg" role="dialog" aria-modal="true" aria-labelledby="stopTitle">
+    <div>
+      <b id="stopTitle" style="font-size:20px">End this ride?</b>
+      <div class="small num" id="stopSum">—</div>
+      <div class="ridebar">
+        <button type="button" class="rb pause" id="stopNo">Keep riding</button>
+        <button type="button" class="rb stop" id="stopYes" style="flex:1">End ride</button>
+      </div>
+    </div>
+  </div>
   <div class="view on" id="v-ride">
-    <section class="navb" aria-live="polite" aria-label="Navigation">
+    <div class="chips" id="modeSeg" role="tablist" aria-label="Ride mode" style="display:flex;gap:6px">
+      <button type="button" role="tab" data-mode="sim" style="flex:1">Simulation</button>
+      <button type="button" role="tab" data-mode="gps" style="flex:1">Real ride (GPS)</button>
+    </div>
+    <div class="ridebar" aria-label="Ride controls">
+      <button type="button" class="rb go" id="rbStart"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span id="rbStartTxt">Start ride</span></button>
+      <button type="button" class="rb pause" id="rbPause" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4h4v16H7zM13 4h4v16h-4z"/></svg>Pause</button>
+      <button type="button" class="rb stop" id="rbStop" style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>Stop</button>
+      <button type="button" class="rb k simonly" id="rbK" aria-label="Simulation speed">×60</button>
+    </div>
+    <section class="card dark gpsonly" style="flex-direction:column;padding:16px 18px;gap:8px">
+      <div class="row"><span style="font-size:13px;color:#B9BDC8">Speed · GPS</span><span class="num" id="gStatus" style="font-size:13px;color:#B9BDC8">GPS off</span></div>
+      <div style="display:flex;align-items:baseline;gap:8px"><span class="g num" id="gSpd" style="font-size:64px;line-height:1">0.0</span><span style="font-size:18px;color:#B9BDC8">km/h</span></div>
+      <span class="num" id="gClock" style="font-size:13px;color:#B9BDC8">—</span>
+    </section>
+    <div class="grid2 gpsgrid" style="display:none" id="gTiles"></div>
+    <section class="card gpsonly" style="flex-direction:column;gap:4px">
+      <span class="small num" id="gPos">Position: —</span>
+      <span class="small">Battery, solar and motor will appear here once the Bluetooth link to the bike is added. Keep the app open with the screen on while recording.</span>
+    </section>
+    <section class="navb simonly" aria-live="polite" aria-label="Navigation">
       <div class="arr"><svg id="navIco" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg></div>
       <div style="flex:1;min-width:0">
         <div class="g num" id="navDist" style="font-size:26px;line-height:1.1">— m</div>
@@ -187,16 +232,16 @@
       </div>
       <button type="button" class="vb" id="voiceBtn" aria-label="Voice guidance on" aria-pressed="true"><svg id="voiceIco" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg></button>
     </section>
-    <section class="card" id="navMore" style="padding:8px 15px;gap:0">
+    <section class="card simonly" id="navMore" style="padding:8px 15px;gap:0">
       <div class="row small num" style="padding:4px 0 6px"><span id="navRoad">—</span><button type="button" id="navToggle" aria-expanded="true" style="border:0;background:transparent;color:var(--blue);font:600 13px Inter,sans-serif;cursor:pointer;min-height:32px">Less ▴</button></div>
       <div id="navList" class="list" style="display:flex;flex-direction:column"></div>
     </section>
-    <section class="card dark" style="padding:16px 18px;gap:10px">
+    <section class="card dark simonly" style="padding:16px 18px;gap:10px">
       <div class="row"><span style="font-size:13px;color:#B9BDC8">Speed</span><span class="num" style="font-size:13px;color:#B9BDC8"><span id="clock">08:00</span> · Lanzhou in <b style="color:#fff" id="toNext">—</b></span></div>
       <div style="display:flex;align-items:baseline;gap:8px"><span class="g num" id="spd" style="font-size:64px;line-height:1">0.0</span><span style="font-size:18px;color:#B9BDC8">km/h</span></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="chip"><span class="sw" id="surfSw"></span><span id="surfTxt">Asphalt</span></span></div>
     </section>
-    <div class="grid2">
+    <div class="grid2 simonly">
       <section class="card">
         <span class="lbl">Slope</span>
         <span class="g num" id="slope" style="font-size:30px">0 %</span>
@@ -210,7 +255,7 @@
         <span class="small num" id="sunTimes" style="display:flex;gap:10px"></span>
       </section>
     </div>
-    <section class="card">
+    <section class="card simonly">
       <div class="row"><span class="lbl">Battery · solar only</span><span class="small num" id="range">≈ — km motor range</span></div>
       <div style="display:flex;align-items:center;gap:14px">
         <span class="g num" id="batt" style="font-size:34px;line-height:1">72 %</span>
@@ -229,7 +274,7 @@
         <button type="button" class="pw" id="mUp" aria-label="More motor power">+</button>
       </div>
     </section>
-    <section class="card">
+    <section class="card simonly">
       <div class="row"><span class="lbl">Next 20 km</span><span class="small num" id="climb">—</span></div>
       <svg id="prof" width="100%" height="64" viewBox="0 0 326 64" preserveAspectRatio="none" role="img" aria-label="Elevation profile of the next 20 km"></svg>
       <div class="strip" id="profStrip"></div>
@@ -303,6 +348,26 @@
       <section class="card"><span class="small">Today so far</span><span class="g num" style="font-size:24px" id="tToday">0 km</span></section>
       <section class="card"><span class="small">Average speed today</span><span class="g num" style="font-size:24px" id="tAvg">—</span></section>
     </div>
+    <section class="card" aria-label="Ride history">
+      <div class="row"><span class="lbl">Ride history</span><span class="small" id="hNote"></span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button type="button" class="pw" id="hPrev" aria-label="Previous day">‹</button>
+        <select id="hSel" aria-label="Choose a day" style="flex:1;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--ground);color:var(--ink);font:600 15px Inter,sans-serif;padding:0 10px"></select>
+        <button type="button" class="pw" id="hNext" aria-label="Next day">›</button>
+      </div>
+      <div class="small num" id="hRoute" style="font-weight:600;color:var(--ink)">—</div>
+      <div class="lbl" style="margin-top:4px">24 h trend</div>
+      <div class="chips" id="trChips" role="tablist" aria-label="Trend measure" style="display:flex;gap:6px;flex-wrap:wrap">
+        <button type="button" role="tab" data-m="v">Speed</button><button type="button" role="tab" data-m="b">Battery</button><button type="button" role="tab" data-m="sm">Solar & motor</button><button type="button" role="tab" data-m="e">Elevation</button>
+      </div>
+      <div id="trWrap" style="position:relative">
+        <svg id="trSvg" width="100%" height="170" role="img" aria-label="24 hour trend chart" style="display:block;touch-action:none"></svg>
+        <div id="trTip" class="num" style="position:absolute;top:0;display:none;pointer-events:none;background:var(--ink);color:var(--ground);border-radius:8px;padding:5px 8px;font-size:12px;white-space:nowrap"></div>
+      </div>
+      <div id="trLegend" class="small" style="display:flex;gap:14px"></div>
+      <div class="grid2" id="hTiles"></div>
+      <div class="list" id="hRides" style="display:flex;flex-direction:column"></div>
+    </section>
     <div class="grid2">
       <label class="btn" style="display:flex;align-items:center;justify-content:center">Load GPX<input type="file" id="gpxIn" accept=".gpx,application/gpx+xml,application/xml,text/xml" style="display:none"></label>
       <button type="button" class="btn" id="runSim" style="background:var(--blue);color:#fff;border:0">Run simulation</button>
@@ -362,6 +427,7 @@
 
 <script>
 (function(){
+  let MODE = 'sim';
   // ---------- route model (example data) ----------
   const TOTAL = 14300;
   const STOPS = [
@@ -388,7 +454,7 @@
   const CAP_WH = 960, RIDER = 120, MOTOR = 200, PANEL = 600, EXTRA = 200; // EXTRA: example watts for the extra panel
 
   const S = {
-    km: 9840, day: 57, t: 8.5*3600, batt: 72, tilt: 0, auto: true, extra: false, k: 60, paused: false, bt: true,
+    km: 9840, day: 57, t: 8.5*3600, batt: 72, tilt: 0, auto: true, extra: false, k: 60, paused: true, started: false, rKm: 0, rSec: 0, bt: true, cur: null,
     v: 0, solar: 0, motor: MOTOR, motorSet: MOTOR, dayKm: 0, rideSec: 0,
     eIn: new Array(14).fill(0), eOut: new Array(14).fill(0)
   };
@@ -411,6 +477,11 @@
     return Math.min(lo, 35/3.6);
   }
 
+  // ---------- ride history ----------
+  let REC = true, SEEDING = false, HIST = [];
+  function newCur(){ return { tr: [], slot: Math.floor(S.t/600), slotKm0: S.km, aIn: 0, aOut: 0, aSec: 0, startKm: S.km, maxV: 0, up: 0, down: 0, sIn: 0, mOut: 0, minB: S.batt }; }
+  function recOf(c){ return { d: S.day, from: c.startKm, to: S.km, km: S.km - c.startKm, sec: S.rideSec, maxV: c.maxV, up: c.up, down: c.down, sIn: c.sIn, mOut: c.mOut, minB: c.minB, endB: S.batt, sim: !!c.sim, tr: c.tr.slice() }; }
+  function closeDay(){ const r = recOf(S.cur); HIST = HIST.filter(x => x.d !== r.d); HIST.push(r); if(SEEDING) return; try{ localStorage.setItem('sunTripHist', JSON.stringify(HIST.filter(x => !x.sim))); }catch(e){} }
   function step(dt){
     const h = S.t/3600;
     const riding = isRiding(h);
@@ -430,16 +501,25 @@
       S.v = solveSpeed(0.95*(RIDER + S.motor), gr, w);
       const dkm = S.v*dt/1000;
       S.km = Math.min(LIM, S.km + dkm);
-      S.dayKm += dkm; S.rideSec += dt;
+      S.dayKm += dkm; S.rideSec += dt; S.rKm += dkm; S.rSec += dt;
+      const c = S.cur; c.maxV = Math.max(c.maxV, S.v*3.6); const dz = gr*dkm*1000; if(dz > 0) c.up += dz; else c.down -= dz;
     } else S.v = 0;
 
     const inWh = S.solar*dt/3600, outWh = (S.motor/0.85)*dt/3600;
     S.batt = Math.max(0, Math.min(100, S.batt + (inWh - outWh)/CAP_WH*100));
+    S.cur.sIn += inWh; S.cur.mOut += outWh; if(riding) S.cur.minB = Math.min(S.cur.minB, S.batt);
     const bucket = Math.floor(h) - 6;
     if(bucket >= 0 && bucket < 14){ S.eIn[bucket] += inWh; S.eOut[bucket] += outWh; }
 
     S.t += dt;
-    if(S.t >= 24*3600){ S.t -= 24*3600; S.day++; S.dayKm = 0; S.rideSec = 0; S.eIn.fill(0); S.eOut.fill(0); }
+    { const c = S.cur; c.aIn += inWh; c.aOut += outWh; c.aSec += dt;
+      const slot = Math.floor(S.t/600);
+      if(slot !== c.slot){
+        const hrs = Math.max(1e-6, c.aSec/3600), f = simElev || elev;
+        c.tr.push([ +((c.slot+1)/6).toFixed(3), +((S.km - c.slotKm0)/hrs).toFixed(1), Math.round(S.batt), Math.round(c.aIn/hrs), Math.round(c.aOut/hrs), Math.round(f(S.km)) ]);
+        c.slot = slot; c.slotKm0 = S.km; c.aIn = 0; c.aOut = 0; c.aSec = 0;
+      } }
+    if(S.t >= 24*3600){ if(REC) closeDay(); S.t -= 24*3600; S.day++; S.cur = newCur(); S.dayKm = 0; S.rideSec = 0; S.eIn.fill(0); S.eOut.fill(0); }
   }
 
   // ---------- rendering ----------
@@ -490,7 +570,7 @@
     $('btTxt').textContent = S.bt ? 'Connected' : 'No signal';
 
     // ride
-    $('spd').textContent = (S.v*3.6).toFixed(1);
+    $('spd').textContent = ((S.paused ? 0 : S.v)*3.6).toFixed(1);
     const sf = SURF[surfAt(S.km)];
     $('surfSw').style.background = sf.c === '#4A4F5C' ? '#9AA3B5' : sf.c;
     $('surfTxt').textContent = sf.n;
@@ -606,10 +686,12 @@
   const VON = '<path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>';
   const VOFF = '<path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/>';
   function say(txt){
-    if(!voiceOn || !('speechSynthesis' in window)) return;
+    if(!voiceOn) return;
+    if(window.AndroidTTS){ try{ aud.volume = 0.2; AndroidTTS.speak(txt); setTimeout(() => { aud.volume = 1; }, 3500); }catch(e){} return; }
+    if(!('speechSynthesis' in window)) return;
     try{ const u = new SpeechSynthesisUtterance(txt); u.lang='en-GB'; aud.volume = 0.2; u.onend = () => { aud.volume = 1; }; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){}
   }
-  $('voiceBtn').addEventListener('click', () => { voiceOn = !voiceOn; $('voiceIco').innerHTML = voiceOn ? VON : VOFF; $('voiceBtn').setAttribute('aria-pressed', String(voiceOn)); $('voiceBtn').setAttribute('aria-label', voiceOn ? 'Voice guidance on' : 'Voice guidance off'); });
+  $('voiceBtn').addEventListener('click', () => { voiceOn = !voiceOn; if(voiceOn) say('Voice guidance on'); $('voiceIco').innerHTML = voiceOn ? VON : VOFF; $('voiceBtn').setAttribute('aria-pressed', String(voiceOn)); $('voiceBtn').setAttribute('aria-label', voiceOn ? 'Voice guidance on' : 'Voice guidance off'); });
   $('voiceIco').innerHTML = VON;
   function renderNav(){
     let n = Math.ceil((S.km - 0.6)/STEP); if(turnN(n).at <= S.km) n++;
@@ -635,7 +717,7 @@
       $('navList').innerHTML = html;
     }
     $('navIco').innerHTML = a.turn.k === 'round' ? ROUND : '<g transform="rotate('+a.turn.a+' 12 12)">'+ARROW+'</g>';
-    const riding = isRiding(S.t/3600);
+    const riding = isRiding(S.t/3600) && S.started && !S.paused;
     if(riding){
       const key500 = n+'-500', key50 = n+'-50';
       if(dm < 500 && dm > 150 && lastSaid !== key500 && lastSaid !== key50){ lastSaid = key500; say('In 500 metres, ' + a.turn.t + a.road); }
@@ -677,6 +759,7 @@
     const save = JSON.parse(JSON.stringify(S));
     const total = GPX ? GPX.total : TOTAL;
     simElev = GPX ? gpxElev : null; LIM = total;
+    REC = false; S.cur = newCur();
     Object.assign(S, { km: 0, day: 1, t: 8.5*3600, batt: 100, auto: true, bt: true, dayKm: 0, rideSec: 0, eIn: new Array(14).fill(0), eOut: new Array(14).fill(0) });
     const days = []; let startKm = 0, minB = 100, cutDays = new Set(), solarWh = 0, motorWh = 0, guard = 0, curDay = 1;
     while(S.km < total && guard++ < 400000){
@@ -688,6 +771,7 @@
     days.push({ d: curDay, from: startKm, to: S.km });
     const res = { days, minB, cut: cutDays.size, solarWh, motorWh, total, gpx: !!GPX };
     for(const k in save) S[k] = save[k];
+    REC = true;
     simElev = null; LIM = TOTAL;
     return res;
   }
@@ -711,18 +795,116 @@
       $('runSim').textContent = 'Run again';
     }, 30);
   });
+  S.cur = newCur();
+  // Earlier days: simulated from Lyon up to today's position (example data), plus any real days saved on this phone
+  (function seedHistory(){
+    SEEDING = true;
+    const save = JSON.parse(JSON.stringify(S));
+    const target = save.km;
+    Object.assign(S, { km: 0, day: 1, t: 8.5*3600, batt: 100, auto: true, dayKm: 0, rideSec: 0, eIn: new Array(14).fill(0), eOut: new Array(14).fill(0) });
+    S.cur = newCur(); S.cur.sim = true;
+    let guard = 0;
+    while(S.km < target && guard++ < 300000){ step(60); if(S.cur.sim !== true) S.cur.sim = true; }
+    const days = HIST.length;
+    for(const k in save) S[k] = save[k];
+    HIST.forEach(x => x.sim = true);
+    S.day = days + 1; S.km = target; S.cur = newCur(); SEEDING = false;
+    try{ const saved = JSON.parse(localStorage.getItem('sunTripHist') || '[]'); saved.forEach(r => { HIST = HIST.filter(x => x.d !== r.d); HIST.push(r); }); HIST.sort((a,b) => a.d - b.d); }catch(e){}
+  })();
+  let hIdx = -1; // -1 = today (live)
+  function fillSel(){
+    if(MODE === 'gps'){
+      const opts = RHIST.filter(r => !GP.rec || r.date !== GP.rec.date).map((r,i) => '<option value="'+i+'">'+dateLabel(r.date)+' · '+fmt(r.km)+' km</option>').join('') + '<option value="-1">Today · '+dateLabel(todayKey())+' (live)</option>';
+      $('hSel').innerHTML = opts; $('hSel').value = String(hIdx); return;
+    }
+    const opts = HIST.map((r,i) => '<option value="'+i+'">Day '+r.d+' · '+fmt(r.km)+' km</option>').join('') + '<option value="-1">Today · day '+S.day+' (live)</option>';
+    $('hSel').innerHTML = opts; $('hSel').value = String(hIdx);
+  }
+  function dayPlaces(from, to){ const passed = STOPS.filter(x => x[1] > from && x[1] <= to + 0.5).map(x => x[0]); const a = placeAt(from), b = placeAt(to); const nx = (STOPS.find(x => x[1] > to) || STOPS[STOPS.length-1])[0]; return (a === b ? 'Between ' + a + ' and ' + nx : a + ' → ' + b) + (passed.length ? ' · passes ' + passed.join(', ') : ''); }
+  function renderHist(){
+    if(MODE === 'gps') return renderRealHist();
+    $('hRides').innerHTML = '';
+    const live = hIdx < 0;
+    const r = live ? recOf(S.cur) : HIST[hIdx];
+    if(!r) return;
+    $('hRoute').textContent = 'Day ' + r.d + ' · ' + dayPlaces(r.from, r.to);
+    $('hNote').textContent = live ? 'Live' : (r.sim ? 'Simulated' : 'Recorded');
+    const avg = r.sec > 60 ? (r.km/(r.sec/3600)).toFixed(1)+' km/h' : '—';
+    const t = (lab, val, col) => '<section class="card" style="padding:10px 12px;gap:2px"><span class="small">'+lab+'</span><span class="g num" style="font-size:20px'+(col?';color:'+col:'')+'">'+val+'</span></section>';
+    $('hTiles').innerHTML = t('Distance', fmt(r.km)+' km') + t('Riding time', hmDur(r.sec)) + t('Average speed', avg) + t('Top speed', r.maxV.toFixed(1)+' km/h')
+      + t('Climb', '+'+fmt(r.up)+' m') + t('Descent', '−'+fmt(r.down)+' m') + t('Solar in', (r.sIn/1000).toFixed(2)+' kWh', 'var(--in)') + t('Motor out', (r.mOut/1000).toFixed(2)+' kWh', 'var(--out)')
+      + t('Lowest battery', Math.round(r.minB)+' %', r.minB <= 10 ? 'var(--warn)' : '') + t('Battery at end', Math.round(r.endB)+' %');
+    if(!live || $('trTip').style.display !== 'block') drawTrend(r);
+    $('hPrev').disabled = live ? HIST.length === 0 : hIdx <= 0;
+    $('hNext').disabled = live;
+  }
+  // ---------- 24 h trend chart ----------
+  let trM = 'v';
+  const TRM = {
+    v:  { name: 'Speed', unit: 'km/h', series: [{ i: 1, label: 'Average speed', col: 'var(--blue)' }] },
+    b:  { name: 'Battery', unit: '%', fixed: [0, 100], series: [{ i: 2, label: 'Battery', col: 'var(--blue)' }] },
+    sm: { name: 'Solar & motor', unit: 'W', series: [{ i: 3, label: 'Solar in', col: 'var(--in)' }, { i: 4, label: 'Motor out', col: 'var(--out)', dash: '6 4' }] },
+    e:  { name: 'Elevation', unit: 'm', series: [{ i: 5, label: 'Elevation', col: 'var(--blue)' }] }
+  };
+  function niceMax(v){ if(v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); const n = v/p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
+  let trCur = null, trStep = 0;
+  function drawTrend(r){
+    trCur = r;
+    const svg = $('trSvg'), W = Math.max(260, $('trWrap').clientWidth || 330), H = 170, L = 40, Rt = 8, T = 10, B = 22;
+    const m = TRM[trM], tr = r.tr || [];
+    document.querySelectorAll('#trChips button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.m === trM)));
+    $('trLegend').innerHTML = m.series.length > 1 ? m.series.map(se => '<span style="display:flex;align-items:center;gap:6px"><svg width="22" height="8" aria-hidden="true"><line x1="1" y1="4" x2="21" y2="4" stroke="'+se.col+'" stroke-width="2"'+(se.dash?' stroke-dasharray="'+se.dash+'"':'')+'/></svg>'+se.label+'</span>').join('') : '';
+    const hasData = tr.some(p => m.series.some(se => p[se.i] != null));
+    if(tr.length && !hasData){ svg.innerHTML = '<text x="'+(W/2)+'" y="90" text-anchor="middle" font-size="13" fill="var(--muted)">No data · needs the Bluetooth link to the bike</text>'; return; }
+    if(!tr.length){ svg.innerHTML = '<text x="'+(W/2)+'" y="90" text-anchor="middle" font-size="13" fill="var(--muted)">No data yet for this day</text>'; return; }
+    let lo, hi;
+    if(m.fixed){ lo = m.fixed[0]; hi = m.fixed[1]; }
+    else { const vals = []; tr.forEach(p => m.series.forEach(se => { if(p[se.i] != null) vals.push(p[se.i]); })); const mn = trM === 'e' ? Math.min(...vals) : 0, mx = Math.max(...vals, mn + 1);
+      const raw = (mx - mn)/4, pw = Math.pow(10, Math.floor(Math.log10(raw))), st = [1,2,2.5,5,10].map(k => k*pw).find(k => k >= raw);
+      lo = Math.floor(mn/st)*st; hi = Math.ceil(mx/st)*st; if(hi === lo) hi = lo + st; trStep = st; }
+    const X = h => L + h/24*(W-L-Rt), Y = v => T + (1 - (v-lo)/(hi-lo))*(H-T-B);
+    let g = '';
+    const dv = m.fixed ? 4 : Math.round((hi-lo)/trStep); for(let k=0;k<=dv;k++){ const v = lo + (hi-lo)*k/dv, y = Y(v); g += '<line x1="'+L+'" x2="'+(W-Rt)+'" y1="'+y+'" y2="'+y+'" stroke="var(--line)" stroke-width="1"/><text x="'+(L-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+fmt(v)+'</text>'; }
+    for(let h=0;h<=24;h+=6){ g += '<text x="'+X(h)+'" y="'+(H-6)+'" text-anchor="'+(h===0?'start':h===24?'end':'middle')+'" font-size="10" fill="var(--muted)">'+String(h).padStart(2,'0')+':00</text>'; }
+    g += '<text x="'+L+'" y="'+(T-1)+'" font-size="10" fill="var(--muted)">'+m.unit+'</text>';
+    m.series.forEach(se => { let pen = 'M'; let prevH = -9; const d = tr.map(p => { if(p[se.i] == null){ pen = 'M'; return ''; } if(p[0] - prevH > 0.25) pen = 'M'; prevH = p[0]; const q = pen + X(p[0]).toFixed(1)+' '+Y(p[se.i]).toFixed(1); pen = 'L'; return q; }).join(' '); g += '<path d="'+d+'" fill="none" stroke="'+se.col+'" stroke-width="2" stroke-linejoin="round"'+(se.dash?' stroke-dasharray="'+se.dash+'"':'')+'/>'; });
+    g += '<g id="trHover" style="display:none"><line id="trHL" y1="'+T+'" y2="'+(H-B)+'" stroke="var(--muted)" stroke-width="1"/>' + m.series.map((se,k) => '<circle id="trHD'+k+'" r="5" fill="'+se.col+'" stroke="var(--card)" stroke-width="2"/>').join('') + '</g>';
+    g += '<rect x="'+L+'" y="0" width="'+(W-L-Rt)+'" height="'+H+'" fill="transparent" id="trHit"/>';
+    svg.setAttribute('viewBox', '0 0 '+W+' '+H); svg.innerHTML = g;
+    const hit = $('trHit');
+    const move = ev => {
+      const rect = svg.getBoundingClientRect(), px = (ev.clientX - rect.left) * (W/rect.width);
+      const h = (px - L)/(W-L-Rt)*24; let best = 0; tr.forEach((p,j) => { if(Math.abs(p[0]-h) < Math.abs(tr[best][0]-h)) best = j; });
+      const p = tr[best], x = X(p[0]);
+      $('trHover').style.display = ''; $('trHL').setAttribute('x1', x); $('trHL').setAttribute('x2', x);
+      m.series.forEach((se,k) => { const c = $('trHD'+k); c.setAttribute('cx', x); c.setAttribute('cy', p[se.i] == null ? -20 : Y(p[se.i])); });
+      $('trTip').innerHTML = hm(p[0] % 24) + ' · ' + m.series.map(se => (m.series.length > 1 ? se.label + ' ' : '') + '<b>' + (p[se.i] == null ? '—' : fmt(p[se.i]) + ' ' + m.unit) + '</b>').join(' · ');
+      $('trTip').style.display = 'block';
+      const tw = $('trTip').offsetWidth, left = Math.min(Math.max(0, x*rect.width/W - tw/2), rect.width - tw);
+      $('trTip').style.left = left + 'px';
+    };
+    hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move);
+    hit.addEventListener('pointerleave', () => { $('trHover').style.display = 'none'; $('trTip').style.display = 'none'; });
+  }
+  document.querySelectorAll('#trChips button').forEach(b => b.addEventListener('click', () => { trM = b.dataset.m; if(trCur) drawTrend(trCur); }));
+  $('hSel').addEventListener('change', () => { hIdx = Number($('hSel').value); renderHist(); });
+  $('hPrev').addEventListener('click', () => { const L = histList().length; hIdx = hIdx < 0 ? L - 1 : Math.max(0, hIdx - 1); $('hSel').value = String(hIdx); renderHist(); });
+  $('hNext').addEventListener('click', () => { if(hIdx < 0) return; hIdx = hIdx >= histList().length - 1 ? -1 : hIdx + 1; $('hSel').value = String(hIdx); renderHist(); });
+  let lastHistLen = -1, lastHistT = 0;
+  setInterval(() => { const L = histList().length + (MODE === 'gps' ? 1000 : 0); if(L !== lastHistLen){ lastHistLen = L; fillSel(); } if(hIdx < 0) renderHist(); }, 1000);
+  fillSel(); renderHist();
   setMode(true);
   // ---------- loop ----------
   let last = performance.now();
   function frame(now){
     const realDt = Math.min(0.5, (now-last)/1000); last = now;
-    if(!S.paused){
+    if(!S.paused && MODE === 'sim'){
       let simDt = realDt*S.k;
       const h = S.t/3600;
       if(!(h >= 6 && h < 20)) simDt *= 20; // skip the night faster
       while(simDt > 0){ const d = Math.min(5, simDt); step(d); simDt -= d; }
     }
-    render(); renderNav();
+    render(); if(MODE === 'sim') renderNav(); else renderGps();
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
@@ -732,7 +914,139 @@
     S.k = Number(b.dataset.k);
     document.querySelectorAll('#speedSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
   }));
-  $('pauseBtn').addEventListener('click', () => { S.paused = !S.paused; $('pauseBtn').textContent = S.paused ? 'Resume' : 'Pause'; });
+  function hmDur(sec){ const h = Math.floor(sec/3600), m = Math.floor(sec/60)%60; return h+' h '+String(m).padStart(2,'0'); }
+  function rideSummary(){ const avg = S.rSec > 60 ? (S.rKm/(S.rSec/3600)).toFixed(1) : '—'; return fmt(S.rKm)+' km · riding time '+hmDur(S.rSec)+' · average '+avg+' km/h'; }
+  function syncRide(){
+    $('rbStart').style.display = (!S.started || S.paused) ? 'flex' : 'none';
+    $('rbStartTxt').textContent = S.started ? 'Resume' : 'Start ride';
+    $('rbPause').style.display = (S.started && !S.paused) ? 'flex' : 'none';
+    $('rbStop').style.display = S.started ? 'flex' : 'none';
+    $('rbK').textContent = '×'+S.k;
+    $('pauseBtn').textContent = S.paused ? (S.started ? 'Resume' : 'Start ride') : 'Pause';
+    document.querySelectorAll('#speedSeg button').forEach(x => x.setAttribute('aria-pressed', String(Number(x.dataset.k) === S.k)));
+  }
+  // ---------- real ride recording (phone GPS) ----------
+  const GP = { watch: null, last: null, v: 0, altF: null, altRef: null, buf: [], rec: null, fix: null, slope: null };
+  let RHIST = [];
+  try{ RHIST = JSON.parse(localStorage.getItem('sunTripReal') || '[]'); }catch(e){ RHIST = []; }
+  const pad2 = n => String(n).padStart(2,'0');
+  function todayKey(){ const d = new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+  function dateLabel(k){ const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); }
+  function histList(){ return MODE === 'gps' ? RHIST.filter(r => !GP.rec || r.date !== GP.rec.date) : HIST; }
+  function saveReal(){ try{ localStorage.setItem('sunTripReal', JSON.stringify(RHIST)); }catch(e){} }
+  function gDay(){
+    const k = todayKey();
+    if(!GP.rec || GP.rec.date !== k){
+      if(GP.rec) saveReal();
+      GP.rec = RHIST.find(r => r.date === k);
+      if(!GP.rec){ GP.rec = { date: k, km: 0, sec: 0, maxV: 0, up: 0, down: 0, tr: [], slot: -1, aKm: 0, aSec: 0, first: null, lastT: null, real: true }; RHIST.push(GP.rec); RHIST.sort((a,b) => a.date < b.date ? -1 : 1); }
+      GP.altRef = null;
+      if(S.started) gNewRide();
+    }
+    return GP.rec;
+  }
+  function gNewRide(){ const r = GP.rec; r.rides = r.rides || []; GP.ride = { start: Date.now(), end: Date.now(), km: 0, sec: 0 }; r.rides.push(GP.ride); saveReal(); }
+  function onFix(pos){
+    const c = pos.coords, t = pos.timestamp, p = [c.latitude, c.longitude];
+    GP.fix = { p, acc: c.accuracy, alt: c.altitude, t };
+    GP.err = null;
+    if(c.accuracy > 35){ GP.v = 0; return; }
+    if(c.altitude != null){ GP.altF = GP.altF == null ? c.altitude : GP.altF*0.8 + c.altitude*0.2; }
+    if(!S.started || S.paused){ GP.last = { p, t }; GP.v = (c.speed != null && c.speed >= 0) ? c.speed : 0; return; }
+    const r = gDay();
+    if(!r.first) r.first = t;
+    r.lastT = t;
+    if(!GP.last){ GP.last = { p, t }; return; }
+    const dt = (t - GP.last.t)/1000; if(dt <= 0) return;
+    const dkm = hav(GP.last.p, p);
+    let v = (c.speed != null && c.speed >= 0) ? c.speed : dkm*1000/dt;
+    if(v > 22 || dkm*1000/dt > 22){ GP.last = { p, t }; return; } // GPS jump
+    let moved = dkm;
+    if(dkm*1000 < Math.max(2, c.accuracy*0.4) && v < 1){ moved = 0; v = 0; GP.last.t = t; } else GP.last = { p, t };
+    GP.v = v;
+    if(moved > 0){ r.km += moved; S.rKm += moved; if(GP.ride) GP.ride.km += moved; }
+    if(v > 1){ r.sec += dt; S.rSec += dt; if(GP.ride) GP.ride.sec += dt; }
+    if(GP.ride) GP.ride.end = t;
+    r.maxV = Math.max(r.maxV, v*3.6);
+    if(GP.altF != null){
+      if(GP.altRef == null) GP.altRef = GP.altF;
+      const dz = GP.altF - GP.altRef;
+      if(dz > 3){ r.up += dz; GP.altRef = GP.altF; } else if(dz < -3){ r.down -= dz; GP.altRef = GP.altF; }
+      GP.buf.push([r.km, GP.altF]); while(GP.buf.length > 2 && r.km - GP.buf[1][0] > 0.2) GP.buf.shift();
+      const b0 = GP.buf[0]; GP.slope = (r.km - b0[0]) > 0.05 ? (GP.altF - b0[1])/((r.km - b0[0])*1000)*100 : null;
+    }
+    const now = new Date(t), slot = Math.floor((now.getHours()*60 + now.getMinutes())/10);
+    if(slot !== r.slot){
+      if(r.slot >= 0 && r.aSec > 0) r.tr.push([ +((r.slot+1)/6).toFixed(3), +(r.aKm/(r.aSec/3600)).toFixed(1), null, null, null, GP.altF == null ? null : Math.round(GP.altF) ]);
+      r.slot = slot; r.aKm = 0; r.aSec = 0;
+    }
+    r.aKm += moved; r.aSec += dt;
+  }
+  function onFixErr(e){ GP.err = e.code === 1 ? 'Location permission denied' : e.code === 2 ? 'No GPS signal' : 'GPS timeout'; }
+  function gpsOn(){
+    if(GP.watch != null) return;
+    if(!navigator.geolocation){ GP.err = 'GPS not available'; return; }
+    GP.err = null;
+    try{ GP.watch = navigator.geolocation.watchPosition(onFix, onFixErr, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }); }catch(e){ GP.err = 'GPS not available here'; }
+  }
+  function gpsOff(){ if(GP.watch != null){ try{ navigator.geolocation.clearWatch(GP.watch); }catch(e){} GP.watch = null; } }
+  setInterval(() => { if(MODE === 'gps' && GP.rec) saveReal(); }, 30000);
+  function renderGps(){
+    const r = GP.rec || { km: 0, sec: 0, maxV: 0, up: 0, down: 0 };
+    const f = GP.fix;
+    $('gStatus').textContent = GP.err ? GP.err : GP.watch == null ? 'GPS off · press Start ride' : !f ? 'Searching for GPS…' : f.acc > 35 ? 'Weak GPS · ±' + Math.round(f.acc) + ' m' : 'GPS ±' + Math.round(f.acc) + ' m' + (S.paused ? ' · paused' : ' · recording');
+    $('gSpd').textContent = ((S.started && !S.paused) ? GP.v*3.6 : 0).toFixed(1);
+    const d = new Date(); $('gClock').textContent = dateLabel(todayKey()) + ' · ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    const avg = r.sec > 60 ? (r.km/(r.sec/3600)).toFixed(1) + ' km/h' : '—';
+    const t = (lab, val) => '<section class="card" style="padding:10px 12px;gap:2px"><span class="small">'+lab+'</span><span class="g num" style="font-size:20px">'+val+'</span></section>';
+    $('gTiles').innerHTML = t('Distance today', r.km.toFixed(1) + ' km') + t('Riding time', hmDur(r.sec)) + t('Average speed', avg) + t('Top speed', r.maxV.toFixed(1) + ' km/h')
+      + t('Altitude', GP.altF == null ? '—' : fmt(GP.altF) + ' m') + t('Slope', GP.slope == null ? '—' : (GP.slope > 0 ? '+' : '') + GP.slope.toFixed(1) + ' %') + t('Climb', '+' + fmt(r.up) + ' m') + t('Descent', '−' + fmt(r.down) + ' m');
+    $('gPos').textContent = f ? 'Position: ' + f.p[0].toFixed(5) + ', ' + f.p[1].toFixed(5) : 'Position: —';
+  }
+  function renderRealHist(){
+    const list = histList(), live = hIdx < 0;
+    const r = live ? (GP.rec || { date: todayKey(), km: 0, sec: 0, maxV: 0, up: 0, down: 0, tr: [] }) : list[hIdx];
+    if(!r) return;
+    const tm = ms => { const d = new Date(ms); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
+    $('hRoute').textContent = dateLabel(r.date) + (r.first ? ' · ' + tm(r.first) + ' – ' + tm(r.lastT) : ' · no ride recorded yet');
+    $('hNote').textContent = live ? 'Live · GPS' : 'Recorded · GPS';
+    const avg = r.sec > 60 ? (r.km/(r.sec/3600)).toFixed(1)+' km/h' : '—';
+    const t = (lab, val) => '<section class="card" style="padding:10px 12px;gap:2px"><span class="small">'+lab+'</span><span class="g num" style="font-size:20px">'+val+'</span></section>';
+    $('hTiles').innerHTML = t('Distance', r.km.toFixed(1)+' km') + t('Riding time', hmDur(r.sec)) + t('Average speed', avg) + t('Top speed', r.maxV.toFixed(1)+' km/h')
+      + t('Climb', '+'+fmt(r.up)+' m') + t('Descent', '−'+fmt(r.down)+' m') + t('Rides', String((r.rides || []).length)) + t('Battery, solar, motor', '—');
+    $('hRides').innerHTML = (r.rides || []).map((x,k) => '<div class="num" style="font-size:13px"><span style="width:56px;color:var(--muted)">Ride '+(k+1)+'</span><span style="flex:1">'+tm(x.start)+' – '+tm(x.end)+'</span><b>'+x.km.toFixed(1)+' km</b><span style="width:64px;text-align:right;color:var(--muted)">'+hmDur(x.sec)+'</span></div>').join('');
+    if(!live || $('trTip').style.display !== 'block') drawTrend(r);
+    $('hPrev').disabled = live ? list.length === 0 : hIdx <= 0;
+    $('hNext').disabled = live;
+  }
+  function setRideMode(m){
+    if(S.started && m !== MODE){ $('modeSeg').title = 'Stop the ride first'; say('Stop the ride before changing mode'); return; }
+    MODE = m;
+    try{ localStorage.setItem('sunTripMode', m); }catch(e){}
+    $('screen').classList.toggle('gps', m === 'gps');
+    document.querySelectorAll('#modeSeg button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === m)));
+    if(m === 'gps') gDay(); 
+    hIdx = -1; lastHistLen = -1; fillSel(); renderHist();
+  }
+  document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => setRideMode(b.dataset.mode)));
+  try{ if(localStorage.getItem('sunTripMode') === 'gps') setTimeout(() => setRideMode('gps'), 0); }catch(e){}
+  setRideMode(MODE);
+
+  function startRide(){ if(MODE === 'gps') gpsOn(); if(!S.started){ S.started = true; S.rKm = 0; S.rSec = 0; if(MODE === 'gps'){ GP.last = null; gDay(); gNewRide(); } say('Ride started. Have a good ride.'); } else say('Ride resumed'); S.paused = false; syncRide(); }
+  function pauseRide(){ S.paused = true; say('Ride paused'); syncRide(); }
+  $('rbStart').addEventListener('click', startRide);
+  $('rbPause').addEventListener('click', pauseRide);
+  $('rbStop').addEventListener('click', () => { S.paused = true; syncRide(); $('stopTitle').textContent = 'End this ride?'; $('stopSum').textContent = rideSummary(); $('stopNo').style.display = 'flex'; $('stopYes').textContent = 'End ride'; $('stopDlg').style.display = 'flex'; });
+  $('stopNo').addEventListener('click', () => { $('stopDlg').style.display = 'none'; startRide(); });
+  $('stopYes').addEventListener('click', () => {
+    if($('stopYes').textContent === 'OK'){ $('stopDlg').style.display = 'none'; return; }
+    S.started = false; S.paused = true; syncRide(); say('Ride ended'); if(MODE === 'gps'){ if(GP.ride){ GP.ride.end = Math.max(GP.ride.end, Date.now()); GP.ride = null; } saveReal(); gpsOff(); }
+    $('stopTitle').textContent = 'Ride ended'; $('stopSum').textContent = rideSummary(); $('stopNo').style.display = 'none'; $('stopYes').textContent = 'OK';
+  });
+  $('rbK').addEventListener('click', () => { S.k = S.k === 1 ? 60 : S.k === 60 ? 600 : 1; syncRide(); });
+  $('pauseBtn').addEventListener('click', () => { if(S.paused) startRide(); else pauseRide(); });
+  document.querySelectorAll('#speedSeg button').forEach(b => b.addEventListener('click', syncRide));
+  syncRide();
   $('btBtn').addEventListener('click', () => { S.bt = !S.bt; $('btBtn').textContent = S.bt ? 'Simulate Bluetooth drop' : 'Reconnect Bluetooth'; });
   $('tAuto').addEventListener('click', () => { S.auto = !S.auto; });
   $('tUp').addEventListener('click', () => { S.auto = false; S.tilt = Math.min(30, S.tilt + 5); });
