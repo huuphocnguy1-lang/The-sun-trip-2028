@@ -184,7 +184,8 @@
     </div>
     <div style="display:flex;gap:8px;align-items:center">
     <button type="button" class="mode" id="modeBtn" aria-label="Switch to light mode"><svg id="modeIco" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"></svg></button>
-    <span class="bt" id="btChip" role="status">
+    <span class="bt gpsonly" id="gpsChip" role="status" style="display:none;white-space:nowrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/></svg><span id="gpsChipTxt">GPS</span></span>
+    <span class="bt simonly" id="btChip" role="status">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg><span id="btTxt">Connected</span>
     </span>
     </div>
@@ -220,6 +221,9 @@
     </section>
     <div class="grid2 gpsgrid" style="display:none" id="gTiles"></div>
     <section class="card gpsonly" style="flex-direction:column;gap:4px">
+      <div class="row"><span class="lbl">GPS detection</span><span class="small num" id="gSig"></span></div>
+      <div id="gBars" style="display:flex;gap:3px;align-items:flex-end;height:28px" aria-hidden="true"></div>
+      <span class="small num" id="gDet">—</span>
       <span class="small num" id="gPos">Position: —</span>
       <span class="small">Battery, solar and motor will appear here once the Bluetooth link to the bike is added. Keep the app open with the screen on while recording.</span>
     </section>
@@ -367,6 +371,11 @@
       <div id="trLegend" class="small" style="display:flex;gap:14px"></div>
       <div class="grid2" id="hTiles"></div>
       <div class="list" id="hRides" style="display:flex;flex-direction:column"></div>
+      <div id="hMapBox" style="display:none;flex-direction:column;gap:6px">
+        <div class="lbl">Map</div>
+        <div id="hMap" style="position:relative;height:260px;border-radius:14px;overflow:hidden;background:#1d2128;touch-action:none;cursor:grab"></div>
+        <div class="row small"><span id="hMapAttr"></span><span style="display:flex;gap:6px"><button type="button" class="pw" id="mapOut" aria-label="Zoom out">−</button><button type="button" class="pw" id="mapIn" aria-label="Zoom in">+</button></span></div>
+      </div>
     </section>
     <div class="grid2">
       <label class="btn" style="display:flex;align-items:center;justify-content:center">Load GPX<input type="file" id="gpxIn" accept=".gpx,application/gpx+xml,application/xml,text/xml" style="display:none"></label>
@@ -384,7 +393,12 @@
   <!-- TALK -->
   <div class="view" id="v-talk">
     <section class="card">
-      <div class="row"><span class="lbl">Channel · Team Guangzhou</span><span class="small" id="talkLink">Mobile data</span></div>
+      <div class="row"><span class="lbl">Channel · Team Guangzhou</span><span class="small" id="talkLink">Demo</span></div>
+      <div id="talkSetup" style="display:none;flex-direction:column;gap:8px">
+        <label class="small" for="talkName">Your name on the channel</label>
+        <div style="display:flex;gap:8px"><input id="talkName" maxlength="20" placeholder="e.g. Bryan" style="flex:1;min-width:0;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--ground);color:var(--ink);font:600 15px Inter,sans-serif;padding:0 12px"><button type="button" class="rb go" id="talkJoin" style="flex:0 0 110px">Join</button></div>
+        <span class="small" id="talkNet">—</span>
+      </div>
       <div class="list" id="riders">
         <div><span class="dot" style="background:#2E8B57"></span><span style="flex:1;font-weight:600">Rider 2</span><span class="small">online</span></div>
         <div><span class="dot" style="background:#2E8B57"></span><span style="flex:1;font-weight:600">Rider 3</span><span class="small">online</span></div>
@@ -427,7 +441,7 @@
 
 <script>
 (function(){
-  let MODE = 'sim';
+  let MODE = 'sim', mapShownFor = null;
   // ---------- route model (example data) ----------
   const TOTAL = 14300;
   const STOPS = [
@@ -559,7 +573,7 @@
     const ns = nextStop(), ps = prevStop();
     const riding = isRiding(h);
 
-    $('hdrSub').textContent = 'Day '+S.day+' · '+ps[0]+' → '+ns[0];
+    $('hdrSub').textContent = MODE === 'gps' ? 'Real ride · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Day '+S.day+' · '+ps[0]+' → '+ns[0];
     $('camp').style.display = riding ? 'none' : 'block';
     $('clock').textContent = clock;
     $('toNext').textContent = fmt(ns[1]-S.km)+' km';
@@ -835,6 +849,8 @@
       + t('Climb', '+'+fmt(r.up)+' m') + t('Descent', '−'+fmt(r.down)+' m') + t('Solar in', (r.sIn/1000).toFixed(2)+' kWh', 'var(--in)') + t('Motor out', (r.mOut/1000).toFixed(2)+' kWh', 'var(--out)')
       + t('Lowest battery', Math.round(r.minB)+' %', r.minB <= 10 ? 'var(--warn)' : '') + t('Battery at end', Math.round(r.endB)+' %');
     if(!live || $('trTip').style.display !== 'block') drawTrend(r);
+    const mkey = 'sim:' + r.d + ':' + Math.round(r.to);
+    if(mapShownFor !== mkey && (!live || Math.abs(r.to - r.from) > 1)){ mapShownFor = mkey; showMap([simPath(r.from, r.to)], simPath(0, TOTAL)); }
     $('hPrev').disabled = live ? HIST.length === 0 : hIdx <= 0;
     $('hNext').disabled = live;
   }
@@ -868,6 +884,7 @@
     for(let h=0;h<=24;h+=6){ g += '<text x="'+X(h)+'" y="'+(H-6)+'" text-anchor="'+(h===0?'start':h===24?'end':'middle')+'" font-size="10" fill="var(--muted)">'+String(h).padStart(2,'0')+':00</text>'; }
     g += '<text x="'+L+'" y="'+(T-1)+'" font-size="10" fill="var(--muted)">'+m.unit+'</text>';
     m.series.forEach(se => { let pen = 'M'; let prevH = -9; const d = tr.map(p => { if(p[se.i] == null){ pen = 'M'; return ''; } if(p[0] - prevH > 0.25) pen = 'M'; prevH = p[0]; const q = pen + X(p[0]).toFixed(1)+' '+Y(p[se.i]).toFixed(1); pen = 'L'; return q; }).join(' '); g += '<path d="'+d+'" fill="none" stroke="'+se.col+'" stroke-width="2" stroke-linejoin="round"'+(se.dash?' stroke-dasharray="'+se.dash+'"':'')+'/>'; });
+    if(tr.length < 30) m.series.forEach(se => tr.forEach(p => { if(p[se.i] != null) g += '<circle cx="'+X(p[0]).toFixed(1)+'" cy="'+Y(p[se.i]).toFixed(1)+'" r="4" fill="'+se.col+'"/>'; }));
     g += '<g id="trHover" style="display:none"><line id="trHL" y1="'+T+'" y2="'+(H-B)+'" stroke="var(--muted)" stroke-width="1"/>' + m.series.map((se,k) => '<circle id="trHD'+k+'" r="5" fill="'+se.col+'" stroke="var(--card)" stroke-width="2"/>').join('') + '</g>';
     g += '<rect x="'+L+'" y="0" width="'+(W-L-Rt)+'" height="'+H+'" fill="transparent" id="trHit"/>';
     svg.setAttribute('viewBox', '0 0 '+W+' '+H); svg.innerHTML = g;
@@ -933,7 +950,7 @@
   function todayKey(){ const d = new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
   function dateLabel(k){ const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); }
   function histList(){ return MODE === 'gps' ? RHIST.filter(r => !GP.rec || r.date !== GP.rec.date) : HIST; }
-  function saveReal(){ try{ localStorage.setItem('sunTripReal', JSON.stringify(RHIST)); }catch(e){} }
+  function saveReal(){ try{ localStorage.setItem('sunTripReal', JSON.stringify(RHIST)); }catch(e){} if(GP && GP.rec && GP.trk) saveTrack(GP.rec.date, GP.trk); }
   function gDay(){
     const k = todayKey();
     if(!GP.rec || GP.rec.date !== k){
@@ -945,7 +962,10 @@
     }
     return GP.rec;
   }
-  function gNewRide(){ const r = GP.rec; r.rides = r.rides || []; GP.ride = { start: Date.now(), end: Date.now(), km: 0, sec: 0 }; r.rides.push(GP.ride); saveReal(); }
+  function gNewRide(){ const r = GP.rec; r.rides = r.rides || []; GP.ride = { start: Date.now(), end: Date.now(), km: 0, sec: 0 }; r.rides.push(GP.ride); GP.trk = loadTrack(r.date); GP.trk.push([]); GP.tLast = null; saveReal(); }
+  // tracks: one list of segments per day, points every ~40 m, stored compactly
+  function loadTrack(date){ try{ const raw = localStorage.getItem('sunTripTrack-' + date); if(!raw) return []; return JSON.parse(raw).map(seg => { let a = 0, b = 0; const out = []; for(let i=0;i<seg.length;i+=2){ a += seg[i]; b += seg[i+1]; out.push([a/1e5, b/1e5]); } return out; }); }catch(e){ return []; } }
+  function saveTrack(date, trk){ try{ const enc = trk.map(seg => { let a = 0, b = 0; const out = []; seg.forEach(p => { const x = Math.round(p[0]*1e5), y = Math.round(p[1]*1e5); out.push(x - a, y - b); a = x; b = y; }); return out; }); localStorage.setItem('sunTripTrack-' + date, JSON.stringify(enc)); }catch(e){} }
   function onFix(pos){
     const c = pos.coords, t = pos.timestamp, p = [c.latitude, c.longitude];
     GP.fix = { p, acc: c.accuracy, alt: c.altitude, t };
@@ -967,6 +987,7 @@
     if(moved > 0){ r.km += moved; S.rKm += moved; if(GP.ride) GP.ride.km += moved; }
     if(v > 1){ r.sec += dt; S.rSec += dt; if(GP.ride) GP.ride.sec += dt; }
     if(GP.ride) GP.ride.end = t;
+    if(GP.trk && GP.trk.length){ if(!GP.tLast || hav(GP.tLast, p) >= 0.04){ GP.trk[GP.trk.length-1].push(p); GP.tLast = p; } }
     r.maxV = Math.max(r.maxV, v*3.6);
     if(GP.altF != null){
       if(GP.altRef == null) GP.altRef = GP.altF;
@@ -1001,8 +1022,74 @@
     const t = (lab, val) => '<section class="card" style="padding:10px 12px;gap:2px"><span class="small">'+lab+'</span><span class="g num" style="font-size:20px">'+val+'</span></section>';
     $('gTiles').innerHTML = t('Distance today', r.km.toFixed(1) + ' km') + t('Riding time', hmDur(r.sec)) + t('Average speed', avg) + t('Top speed', r.maxV.toFixed(1) + ' km/h')
       + t('Altitude', GP.altF == null ? '—' : fmt(GP.altF) + ' m') + t('Slope', GP.slope == null ? '—' : (GP.slope > 0 ? '+' : '') + GP.slope.toFixed(1) + ' %') + t('Climb', '+' + fmt(r.up) + ' m') + t('Descent', '−' + fmt(r.down) + ' m');
+    const nat = (() => { try{ return window.AndroidGps ? JSON.parse(AndroidGps.status()) : null; }catch(e){ return null; } })();
+    const age = f ? Math.max(0, Math.round((Date.now() - f.t)/1000)) : null;
+    const q = !f || GP.watch == null ? 0 : f.acc <= 5 ? 4 : f.acc <= 10 ? 3 : f.acc <= 20 ? 2 : f.acc <= 35 ? 1 : 0;
+    const qTxt = ['No fix', 'Weak', 'Fair', 'Good', 'Excellent'][q];
+    $('gSig').textContent = qTxt + (f ? ' · ±' + Math.round(f.acc) + ' m' : '');
+    $('gBars').innerHTML = [1,2,3,4].map(k => '<span style="width:10px;height:'+(k*7)+'px;border-radius:2px;background:'+(k <= q ? 'var(--in)' : 'var(--line)')+'"></span>').join('');
+    $('gDet').textContent = (nat ? (nat.enabled ? 'Location on' : 'Location OFF in phone settings') + ' · satellites ' + nat.used + ' used / ' + nat.inView + ' in view' : 'Satellite count: in the phone app only')
+      + ' · last fix ' + (age == null ? '—' : age + ' s ago') + (f && f.alt != null ? ' · GPS altitude ' + Math.round(f.alt) + ' m' : '');
+    $('gpsChipTxt').textContent = GP.watch == null ? 'GPS off' : !f ? 'GPS…' : 'GPS ±' + Math.round(f.acc) + ' m';
+    $('gpsChip').classList.toggle('off', GP.watch != null && q <= 1);
     $('gPos').textContent = f ? 'Position: ' + f.p[0].toFixed(5) + ', ' + f.p[1].toFixed(5) : 'Position: —';
   }
+  // ---------- map (OpenStreetMap; AMap inside China, with the China map offset) ----------
+  function outChina(lat, lon){ return lon < 72.004 || lon > 137.8347 || lat < 0.8293 || lat > 55.8271; }
+  function tLat(x, y){ let r = -100 + 2*x + 3*y + 0.2*y*y + 0.1*x*y + 0.2*Math.sqrt(Math.abs(x)); r += (20*Math.sin(6*x*Math.PI) + 20*Math.sin(2*x*Math.PI))*2/3; r += (20*Math.sin(y*Math.PI) + 40*Math.sin(y/3*Math.PI))*2/3; r += (160*Math.sin(y/12*Math.PI) + 320*Math.sin(y*Math.PI/30))*2/3; return r; }
+  function tLon(x, y){ let r = 300 + x + 2*y + 0.1*x*x + 0.1*x*y + 0.1*Math.sqrt(Math.abs(x)); r += (20*Math.sin(6*x*Math.PI) + 20*Math.sin(2*x*Math.PI))*2/3; r += (20*Math.sin(x*Math.PI) + 40*Math.sin(x/3*Math.PI))*2/3; r += (150*Math.sin(x/12*Math.PI) + 300*Math.sin(x/30*Math.PI))*2/3; return r; }
+  function toGcj(lat, lon){ if(outChina(lat, lon)) return [lat, lon]; const a = 6378245, ee = 0.00669342162296594323; let dLat = tLat(lon-105, lat-35), dLon = tLon(lon-105, lat-35); const rad = lat/180*Math.PI; let m = Math.sin(rad); m = 1 - ee*m*m; const sm = Math.sqrt(m); dLat = (dLat*180)/((a*(1-ee))/(m*sm)*Math.PI); dLon = (dLon*180)/(a/sm*Math.cos(rad)*Math.PI); return [lat + dLat, lon + dLon]; }
+  const MAP = { segs: null, z: 10, cx: 0, cy: 0, china: false };
+  const px = (lat, lon, z) => { const n = 256*Math.pow(2, z), x = (lon + 180)/360*n, s2 = Math.sin(lat*Math.PI/180); return [x, (0.5 - Math.log((1+s2)/(1-s2))/(4*Math.PI))*n]; };
+  const STOPLL = { 'Lyon':[45.764,4.836], 'Geneva':[46.204,6.143], 'Munich':[48.137,11.575], 'Vienna':[48.208,16.373], 'Budapest':[47.498,19.040], 'Kyiv':[50.450,30.523], 'Kharkiv':[49.994,36.230], 'Voronezh':[51.672,39.184], 'Volgograd':[48.708,44.513], 'Astrakhan':[46.349,48.040], 'Atyrau':[47.094,51.924], 'Aktobe':[50.283,57.167], 'Baikonur':[45.617,63.317], 'Tashkent':[41.299,69.240], 'Bishkek':[42.875,74.570], 'Urumqi':[43.825,87.617], 'Hami':[42.818,93.515], 'Lanzhou':[36.061,103.834], 'Xi\u2019an':[34.341,108.940], 'Wuhan':[30.593,114.305], 'Guangzhou':[23.129,113.264] };
+  function llAt(km){ for(let i=1;i<STOPS.length;i++){ const a = STOPS[i-1], b = STOPS[i]; if(km <= b[1] || i === STOPS.length-1){ const f = Math.max(0, Math.min(1, (km - a[1])/Math.max(1, b[1]-a[1]))); const A = STOPLL[a[0]], B = STOPLL[b[0]]; return [A[0] + (B[0]-A[0])*f, A[1] + (B[1]-A[1])*f]; } } return STOPLL['Guangzhou']; }
+  function simPath(from, to){ const out = []; const n = Math.max(2, Math.ceil((to - from)/2)); for(let i=0;i<=n;i++) out.push(llAt(from + (to-from)*i/n)); return out; }
+  function showMap(segs, ghost){
+    MAP.ghost = ghost || null;
+    const box = $('hMapBox');
+    const pts = segs.flat();
+    if(pts.length < 2){ box.style.display = 'none'; MAP.segs = null; return; }
+    box.style.display = 'flex';
+    const mid = pts[Math.floor(pts.length/2)];
+    MAP.china = !outChina(mid[0], mid[1]);
+    MAP.segs = MAP.china ? segs.map(sg => sg.map(p => toGcj(p[0], p[1]))) : segs;
+    if(MAP.ghost) MAP.ghost = MAP.china ? MAP.ghost.map(p => toGcj(p[0], p[1])) : MAP.ghost;
+    const all = MAP.segs.flat(), el = $('hMap'), W = el.clientWidth || 330, H = el.clientHeight || 260;
+    let z = 17;
+    for(; z > 2; z--){ const xs = all.map(p => px(p[0], p[1], z)); const w = Math.max(...xs.map(q => q[0])) - Math.min(...xs.map(q => q[0])), h = Math.max(...xs.map(q => q[1])) - Math.min(...xs.map(q => q[1])); if(w < W - 40 && h < H - 40) break; }
+    const xs = all.map(p => px(p[0], p[1], z));
+    MAP.z = z; MAP.cx = (Math.max(...xs.map(q => q[0])) + Math.min(...xs.map(q => q[0])))/2; MAP.cy = (Math.max(...xs.map(q => q[1])) + Math.min(...xs.map(q => q[1])))/2;
+    drawMap();
+  }
+  function drawMap(){
+    if(!MAP.segs) return;
+    const el = $('hMap'), W = el.clientWidth || 330, H = el.clientHeight || 260, z = MAP.z;
+    const ox = MAP.cx - W/2, oy = MAP.cy - H/2, n = Math.pow(2, z);
+    let html = '';
+    for(let tx = Math.floor(ox/256); tx <= Math.floor((ox+W)/256); tx++) for(let ty = Math.floor(oy/256); ty <= Math.floor((oy+H)/256); ty++){
+      if(ty < 0 || ty >= n) continue;
+      const x = ((tx % n) + n) % n;
+      const url = MAP.china ? 'https://webrd0' + (1 + ((x + ty) % 4)) + '.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x=' + x + '&y=' + ty + '&z=' + z
+                            : 'https://tile.openstreetmap.org/' + z + '/' + x + '/' + ty + '.png';
+      html += '<img alt="" draggable="false" src="' + url + '" style="position:absolute;left:' + Math.round(tx*256 - ox) + 'px;top:' + Math.round(ty*256 - oy) + 'px;width:256px;height:256px;' + (dk() ? 'filter:brightness(.75) contrast(1.1)' : '') + '" onerror="this.style.display=&quot;none&quot;">';
+    }
+    let svg = '<svg width="' + W + '" height="' + H + '" style="position:absolute;left:0;top:0" aria-hidden="true">';
+    if(MAP.ghost){ const d = MAP.ghost.map((p,i) => { const q = px(p[0], p[1], z); return (i ? 'L' : 'M') + (q[0]-ox).toFixed(1) + ' ' + (q[1]-oy).toFixed(1); }).join(' '); svg += '<path d="' + d + '" fill="none" stroke="#9AA3B5" stroke-width="2.5" stroke-dasharray="5 5" opacity=".8"/>'; }
+    MAP.segs.forEach(sg => { if(sg.length < 2) return; const d = sg.map((p,i) => { const q = px(p[0], p[1], z); return (i ? 'L' : 'M') + (q[0]-ox).toFixed(1) + ' ' + (q[1]-oy).toFixed(1); }).join(' '); svg += '<path d="' + d + '" fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" opacity=".9"/><path d="' + d + '" fill="none" stroke="#1F5FD1" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>'; });
+    const all = MAP.segs.flat(), a = px(all[0][0], all[0][1], z), b = px(all[all.length-1][0], all[all.length-1][1], z);
+    svg += '<circle cx="' + (a[0]-ox) + '" cy="' + (a[1]-oy) + '" r="7" fill="#1E8A4C" stroke="#fff" stroke-width="2.5"/><circle cx="' + (b[0]-ox) + '" cy="' + (b[1]-oy) + '" r="7" fill="#C93636" stroke="#fff" stroke-width="2.5"/></svg>';
+    el.innerHTML = html + svg;
+    $('hMapAttr').textContent = (MAP.china ? '© AutoNavi (Gaode) map' : '© OpenStreetMap contributors') + ' · green start, red end' + (MAP.ghost ? ' · dashed: whole trip (simulated, straight lines between cities)' : '');
+  }
+  (function mapControls(){
+    const el = $('hMap'); let drag = null;
+    el.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY, MAP.cx, MAP.cy]; el.setPointerCapture(e.pointerId); el.style.cursor = 'grabbing'; });
+    el.addEventListener('pointermove', e => { if(!drag) return; MAP.cx = drag[2] - (e.clientX - drag[0]); MAP.cy = drag[3] - (e.clientY - drag[1]); drawMap(); });
+    const end = () => { drag = null; el.style.cursor = 'grab'; };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    const zoom = d => { const nz = Math.max(3, Math.min(18, MAP.z + d)); if(nz === MAP.z) return; const f = Math.pow(2, nz - MAP.z); MAP.cx *= f; MAP.cy *= f; MAP.z = nz; drawMap(); };
+    $('mapIn').addEventListener('click', () => zoom(1)); $('mapOut').addEventListener('click', () => zoom(-1));
+  })();
   function renderRealHist(){
     const list = histList(), live = hIdx < 0;
     const r = live ? (GP.rec || { date: todayKey(), km: 0, sec: 0, maxV: 0, up: 0, down: 0, tr: [] }) : list[hIdx];
@@ -1015,7 +1102,9 @@
     $('hTiles').innerHTML = t('Distance', r.km.toFixed(1)+' km') + t('Riding time', hmDur(r.sec)) + t('Average speed', avg) + t('Top speed', r.maxV.toFixed(1)+' km/h')
       + t('Climb', '+'+fmt(r.up)+' m') + t('Descent', '−'+fmt(r.down)+' m') + t('Rides', String((r.rides || []).length)) + t('Battery, solar, motor', '—');
     $('hRides').innerHTML = (r.rides || []).map((x,k) => '<div class="num" style="font-size:13px"><span style="width:56px;color:var(--muted)">Ride '+(k+1)+'</span><span style="flex:1">'+tm(x.start)+' – '+tm(x.end)+'</span><b>'+x.km.toFixed(1)+' km</b><span style="width:64px;text-align:right;color:var(--muted)">'+hmDur(x.sec)+'</span></div>').join('');
-    if(!live || $('trTip').style.display !== 'block') drawTrend(r);
+    if(!live || $('trTip').style.display !== 'block'){ let rr = r; if(live && r.aSec > 30 && r.slot >= 0){ rr = Object.assign({}, r, { tr: r.tr.concat([[ +((r.slot+1)/6).toFixed(3), +(r.aKm/(r.aSec/3600)).toFixed(1), null, null, null, GP.altF == null ? null : Math.round(GP.altF) ]]) }); } drawTrend(rr); }
+    const key = r.date + ':' + (live ? Math.floor(Date.now()/15000) : 'x');
+    if(mapShownFor !== key){ mapShownFor = key; showMap(live && GP.trk ? GP.trk : loadTrack(r.date)); }
     $('hPrev').disabled = live ? list.length === 0 : hIdx <= 0;
     $('hNext').disabled = live;
   }
@@ -1025,7 +1114,7 @@
     try{ localStorage.setItem('sunTripMode', m); }catch(e){}
     $('screen').classList.toggle('gps', m === 'gps');
     document.querySelectorAll('#modeSeg button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === m)));
-    if(m === 'gps') gDay(); 
+    if(m === 'gps'){ gDay(); gpsOn(); } else gpsOff();
     hIdx = -1; lastHistLen = -1; fillSel(); renderHist();
   }
   document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => setRideMode(b.dataset.mode)));
@@ -1040,7 +1129,7 @@
   $('stopNo').addEventListener('click', () => { $('stopDlg').style.display = 'none'; startRide(); });
   $('stopYes').addEventListener('click', () => {
     if($('stopYes').textContent === 'OK'){ $('stopDlg').style.display = 'none'; return; }
-    S.started = false; S.paused = true; syncRide(); say('Ride ended'); if(MODE === 'gps'){ if(GP.ride){ GP.ride.end = Math.max(GP.ride.end, Date.now()); GP.ride = null; } saveReal(); gpsOff(); }
+    S.started = false; S.paused = true; syncRide(); say('Ride ended'); if(MODE === 'gps'){ if(GP.ride){ GP.ride.end = Math.max(GP.ride.end, Date.now()); GP.ride = null; } saveReal(); }
     $('stopTitle').textContent = 'Ride ended'; $('stopSum').textContent = rideSummary(); $('stopNo').style.display = 'none'; $('stopYes').textContent = 'OK';
   });
   $('rbK').addEventListener('click', () => { S.k = S.k === 1 ? 60 : S.k === 60 ? 600 : 1; syncRide(); });
@@ -1066,27 +1155,68 @@
   function setIco(){ $('playIco').innerHTML = aud.paused ? PLAY : PAUSE; $('play').setAttribute('aria-label', aud.paused ? 'Play' : 'Pause'); }
   $('songs').addEventListener('change', e => { list = [...e.target.files]; load(0); aud.play().catch(()=>{}).finally(setIco); });
   $('play').addEventListener('click', () => {
+    if(!list.length && window.AndroidMedia && ext){ if(ext.perm === false) AndroidMedia.openSettings(); else if(ext.app){ AndroidMedia.cmd(ext.playing ? 'pause' : 'play'); setTimeout(pollMedia, 300); } return; }
     if(!list.length){ $('trk').textContent = 'Tap “Add songs” first'; return; }
     if(aud.paused) aud.play().catch(()=>{}).finally(setIco); else { aud.pause(); setIco(); }
   });
-  $('next').addEventListener('click', () => { if(!list.length) return; load(cur+1); aud.play().catch(()=>{}).finally(setIco); });
+  $('next').addEventListener('click', () => { if(!list.length && window.AndroidMedia && ext && ext.app){ AndroidMedia.cmd('next'); setTimeout(pollMedia, 500); return; } if(!list.length) return; load(cur+1); aud.play().catch(()=>{}).finally(setIco); });
   aud.addEventListener('ended', () => { load(cur+1); aud.play().catch(()=>{}); });
   aud.addEventListener('pause', setIco); aud.addEventListener('play', setIco);
+  // control the music app that is playing (QQ Music, etc.) — Android app only
+  let ext = null;
+  const APPNAME = { 'com.tencent.qqmusic': 'QQ Music', 'com.netease.cloudmusic': 'NetEase Music', 'com.kugou.android': 'Kugou', 'com.miui.player': 'Mi Music', 'com.spotify.music': 'Spotify' };
+  function pollMedia(){
+    if(!window.AndroidMedia || list.length) return;
+    try{ ext = JSON.parse(AndroidMedia.state()); }catch(e){ ext = null; }
+    if(!ext) return;
+    if(ext.perm === false){ $('trk').textContent = 'Tap here to control QQ Music'; $('trk').style.color = 'var(--blue)'; $('playIco').innerHTML = PLAY; return; }
+    $('trk').style.color = '';
+    if(!ext.app){ $('trk').textContent = 'No music playing · start QQ Music'; $('playIco').innerHTML = PLAY; return; }
+    $('trk').textContent = (ext.title || 'Unknown song') + (ext.artist ? ' · ' + ext.artist : '') + ' — ' + (APPNAME[ext.app] || 'music app');
+    $('playIco').innerHTML = ext.playing ? PAUSE : PLAY; $('play').setAttribute('aria-label', ext.playing ? 'Pause' : 'Play');
+  }
+  if(window.AndroidMedia){ setInterval(pollMedia, 1000); pollMedia(); }
+  $('trk').addEventListener('click', () => { if(window.AndroidMedia && !list.length && ext && ext.perm === false) AndroidMedia.openSettings(); });
 
   // ---------- walkie-talkie (demo: transmit + simulated replies) ----------
   const ptt = $('ptt'); let txStart = 0;
-  const duck = on => { aud.volume = on ? 0.2 : 1; };
+  const duck = on => { aud.volume = on ? 0.2 : 1; };  // (the phone also lowers QQ Music automatically while a voice plays)
   const clockNow = () => { const h=S.t/3600, hh=Math.floor(h), mm=Math.floor((h-hh)*60); return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0'); };
   function addMsg(t){ const d=document.createElement('div'); d.style.padding='4px 0'; d.textContent=t; const l=$('msgList'); l.insertBefore(d,l.firstChild); while(l.children.length>4) l.removeChild(l.lastChild); }
-  function down(e){ e.preventDefault(); txStart = Date.now(); ptt.classList.add('tx'); $('pttTxt').textContent = 'Talking…'; duck(true); }
-  function up(){ if(!txStart) return; const secs = Math.max(1, Math.round((Date.now()-txStart)/1000)); txStart = 0;
+  let down = function(e){ e.preventDefault(); txStart = Date.now(); ptt.classList.add('tx'); $('pttTxt').textContent = 'Talking…'; duck(true); };
+  let up = function(){ if(!txStart) return; const secs = Math.max(1, Math.round((Date.now()-txStart)/1000)); txStart = 0;
     ptt.classList.remove('tx'); $('pttTxt').textContent = 'Hold to talk'; addMsg('You · '+clockNow()+' · voice message · 0:'+String(secs).padStart(2,'0'));
     setTimeout(() => { ptt.classList.add('rx'); $('pttTxt').textContent = 'Rider 2 talking'; duck(true);
       setTimeout(() => { ptt.classList.remove('rx'); $('pttTxt').textContent = 'Hold to talk'; duck(false); addMsg('Rider 2 · '+clockNow()+' · voice message · 0:03'); }, 2500);
     }, 1500);
   }
-  ptt.addEventListener('pointerdown', down);
-  ptt.addEventListener('pointerup', up); ptt.addEventListener('pointerleave', up); ptt.addEventListener('pointercancel', up);
+  // real walkie-talkie: phones on the same Wi-Fi or hotspot (no internet needed) — Android app only
+  const REAL_TALK = !!window.AndroidTalk;
+  let joined = false, lastSpeaker = '';
+  if(REAL_TALK){
+    $('talkSetup').style.display = 'flex'; $('msgList').innerHTML = '';
+    try{ $('talkName').value = localStorage.getItem('sunTripName') || ''; }catch(e){}
+    $('riders').innerHTML = '<div class="small" style="padding:6px 0">Join the channel to see who is online</div>';
+    $('talkJoin').addEventListener('click', () => {
+      if(!joined){ const n = ($('talkName').value || 'Rider').trim().slice(0, 20); try{ localStorage.setItem('sunTripName', n); }catch(e){} AndroidTalk.start(n); joined = true; $('talkJoin').textContent = 'Leave'; $('talkJoin').className = 'rb stop'; $('talkJoin').style.flex = '0 0 110px'; }
+      else { AndroidTalk.stop(); joined = false; $('talkJoin').textContent = 'Join'; $('talkJoin').className = 'rb go'; $('talkJoin').style.flex = '0 0 110px'; }
+    });
+    setInterval(() => {
+      let st; try{ st = JSON.parse(AndroidTalk.status()); }catch(e){ return; }
+      $('talkLink').textContent = joined ? (st.net ? 'Wi-Fi · offline OK' : 'No Wi-Fi') : 'Not joined';
+      $('talkNet').textContent = st.net ? 'Network: ' + st.net + (st.mic === false ? ' · microphone permission needed' : '') : 'Not on Wi-Fi. One phone turns on its hotspot, the other riders connect to it. No internet needed (range about 50–100 m).';
+      if(joined) $('riders').innerHTML = st.peers.length ? st.peers.map(p => '<div><span class="dot" style="background:#2E8B57"></span><span style="flex:1;font-weight:600">' + p.name.replace(/[<&]/g,'') + '</span><span class="small">' + (p.talking ? 'talking…' : 'online') + '</span></div>').join('') : '<div class="small" style="padding:6px 0">Nobody else online yet</div>';
+      if(!txStart){
+        if(st.speaking){ ptt.classList.add('rx'); $('pttTxt').textContent = st.speaking + ' talking'; duck(true); lastSpeaker = st.speaking; }
+        else if(ptt.classList.contains('rx')){ ptt.classList.remove('rx'); $('pttTxt').textContent = 'Hold to talk'; duck(false); addMsg(lastSpeaker + ' · ' + new Date().toTimeString().slice(0,5) + ' · voice'); }
+      }
+    }, 300);
+  }
+  function realDown(e){ e.preventDefault(); if(!joined){ $('pttTxt').textContent = 'Join the channel first'; return; } txStart = Date.now(); ptt.classList.add('tx'); $('pttTxt').textContent = 'Talking…'; duck(true); AndroidTalk.pttDown(); }
+  function realUp(){ if(!txStart) return; const secs = Math.max(1, Math.round((Date.now()-txStart)/1000)); txStart = 0; AndroidTalk.pttUp(); ptt.classList.remove('tx'); $('pttTxt').textContent = 'Hold to talk'; duck(false); addMsg('You · ' + new Date().toTimeString().slice(0,5) + ' · 0:' + String(secs).padStart(2,'0')); }
+  if(REAL_TALK){ down = realDown; up = realUp; }
+  ptt.addEventListener('pointerdown', e => down(e));
+  ptt.addEventListener('pointerup', () => up()); ptt.addEventListener('pointerleave', () => up()); ptt.addEventListener('pointercancel', () => up());
   ptt.addEventListener('keydown', e => { if((e.key===' '||e.key==='Enter') && !txStart) down(e); });
   ptt.addEventListener('keyup', e => { if(e.key===' '||e.key==='Enter') up(); });
 })();
